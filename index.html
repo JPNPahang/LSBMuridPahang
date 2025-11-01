@@ -4,10 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Sistem Permohonan Lawatan JPNP</title>
-
-  <!-- Tailwind CDN - development only (ok untuk percubaan). For production compile CSS. -->
   <script src="https://cdn.tailwindcss.com"></script>
-
   <style>
     .tab-content { display:none; }
     .tab-active { background:#1d4ed8; color:#fff; }
@@ -16,26 +13,23 @@
   </style>
 </head>
 <body class="bg-gray-100 font-sans">
-
   <div class="container mx-auto p-6 max-w-7xl">
-    <header class="bg-white rounded-lg shadow p-6 mb-6 text-center">
+    <header class="bg-white shadow rounded p-6 mb-6 text-center">
       <h1 class="text-3xl font-bold text-blue-800">Sistem Permohonan Lawatan Sambil Belajar</h1>
       <p class="text-gray-600">Jabatan Pendidikan Negeri Pahang</p>
     </header>
 
     <!-- Tabs -->
-    <div class="bg-white rounded-lg shadow mb-6">
-      <nav class="flex">
-        <button id="tab-btn-borang" class="tab-button flex-1 p-4 font-semibold text-gray-700 tab-active">Borang Permohonan</button>
-        <button id="tab-btn-dashboard" class="tab-button flex-1 p-4 font-semibold text-gray-700">Dashboard JPN</button>
-        <button id="tab-btn-kelulusan" class="tab-button flex-1 p-4 font-semibold text-gray-700">Kelulusan Pengarah</button>
-      </nav>
+    <div class="bg-white rounded shadow p-3 mb-6 flex gap-2">
+      <!-- (Ini adalah kod 'nav' anda yang sedia ada) -->
+      <button id="tab-btn-borang" class="tab-button flex-1 p-4 font-semibold text-gray-700 tab-active">Borang Permohonan</button>
+      <button id="tab-btn-dashboard" class="tab-button flex-1 p-4 font-semibold text-gray-700">Dashboard JPN</button>
+      <button id="tab-btn-kelulusan" class="tab-button flex-1 p-4 font-semibold text-gray-700">Kelulusan Pengarah</button>
     </div>
 
     <!-- CONTENT: Borang -->
-    <!-- PEMBETULAN: 'block' ditukar kepada 'hidden'. 
-         Logik 'showTab' akan mengawalnya. -->
-    <div id="tab-borang" class="tab-content bg-white p-6 rounded-lg shadow hidden">
+    <!-- PEMBETULAN: 'block' ditukar kepada 'hidden' -->
+    <div id="tab-borang" class="tab-content bg-white p-6 rounded shadow-lg hidden">
       <div id="dbStatus" class="mb-4 p-3 bg-blue-50 text-blue-800 rounded">Memuatkan pangkalan data sekolah...</div>
 
       <div class="mb-6">
@@ -44,154 +38,171 @@
       </div>
 
       <!-- Query lookup -->
-      <div id="querySection" class="hidden bg-blue-50 p-4 rounded mb-4">
+      <div id="querySection" class="hidden p-4 mb-4 bg-blue-50 border rounded">
+        <!-- (Ini adalah kod 'querySection' anda yang sedia ada) -->
         <h3 class="font-semibold text-blue-800">Pembetulan Permohonan (Query)</h3>
         <div class="flex gap-3 mt-3">
-          <input id="queryId" placeholder="ID Permohonan" class="px-3 py-2 border rounded w-1/3"/>
-          <input id="queryEmail" type="email" placeholder="Email berdaftar" class="px-3 py-2 border rounded w-1/3"/>
-          <button id="btnCariQuery" class="btn bg-blue-600 text-white">Cari Permohonan</button>
+          <input id="queryId" class="mt-1 mb-2 p-2 border rounded w-1/2" placeholder="ID Permohonan" />
+          <input id="queryEmail" class="mt-1 mb-2 p-2 border rounded w-1/2" placeholder="E-mel" />
+          <button id="btnCariQuery" class="px-4 py-2 bg-blue-600 text-white rounded">Cari Permohonan</button>
         </div>
-        <p id="queryError" class="text-red-600 mt-2 hidden"></p>
+        <p id="queryError" class="text-red-600 hidden mt-2"></p>
       </div>
 
-      <!-- Form -->
       <form id="frm" class="space-y-6 hidden"> <!-- PEMBETULAN: Tambah 'hidden' di sini -->
         <input type="hidden" id="isQueryMode" value="false">
         <input type="hidden" id="currentPermohonanId" value="">
 
         <!-- A: Maklumat Sekolah -->
-        <div class="border-b pb-4">
-          <h2 class="font-semibold">Bahagian A: Maklumat Sekolah</h2>
-          <div class="mt-3 grid grid-cols-6 gap-4">
-            <div class="col-span-1">
-              <label>Kod Sekolah</label>
-              <input id="kodSekolah" class="border px-2 py-2 w-full" placeholder="Contoh: CBA0001" disabled/>
-              <p id="lookupError" class="text-red-600 text-sm hidden"></p>
+        <div>
+          <h2 class="text-lg font-semibold">Bahagian A: Maklumat Sekolah</h2>
+          <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mt-3">
+            <!-- (Kod Bahagian A anda yang sedia ada) -->
+            <div class="md:col-span-2">
+              <label class="block text-sm">Kod Sekolah</label>
+              <input id="kodSekolah" class="mt-1 p-2 border rounded w-full" disabled />
             </div>
-            <div class="col-span-3">
-              <label>Nama Sekolah</label>
-              <input id="namaSekolah" readonly class="border px-2 py-2 w-full bg-gray-100"/>
+            <div class="md:col-span-4">
+              <label class="block text-sm">Nama Sekolah</label>
+              <input id="namaSekolah" readonly class="mt-1 p-2 bg-gray-100 border rounded w-full" />
             </div>
-            <div class="col-span-1">
-              <label>Daerah</label>
-              <input id="daerah" readonly class="border px-2 py-2 w-full bg-gray-100"/>
+            <div class="md:col-span-3">
+              <label class="block text-sm">Daerah</label>
+              <input id="daerah" readonly class="mt-1 p-2 bg-gray-100 border rounded w-full" />
             </div>
-            <div class="col-span-1">
-              <label>Kategori</label>
-              <input id="kategori" readonly class="border px-2 py-2 w-full bg-gray-100"/>
+            <div class="md:col-span-3">
+              <label class="block text-sm">Kategori</label>
+              <input id="kategori" readonly class="mt-1 p-2 bg-gray-100 border rounded w-full" />
             </div>
           </div>
         </div>
 
         <!-- B: Maklumat Lawatan -->
-        <div class="border-b pb-4">
-          <h2 class="font-semibold">Bahagian B: Maklumat Lawatan</h2>
-          <div class="mt-3 grid grid-cols-6 gap-4">
-            <div class="col-span-3">
+        <div>
+          <h2 class="text-lg font-semibold">Bahagian B: Maklumat Lawatan</h2>
+          <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mt-3">
+            <!-- (Kod Bahagian B anda yang sedia ada) -->
+            <div class="md:col-span-3">
               <label>Email Rasmi Sekolah</label>
-              <input id="emailSekolah" type="email" required class="border px-2 py-2 w-full"/>
+              <input id="emailSekolah" type="email" class="mt-1 p-2 border rounded w-full" />
             </div>
-            <div class="col-span-1">
+            <div class="md:col-span-3">
               <label>Tarikh Mula</label>
-              <input id="tarikhMula" type="date" required class="border px-2 py-2 w-full"/>
+              <input id="tarikhMula" type="date" class="mt-1 p-2 border rounded w-full" />
             </div>
-            <div class="col-span-1">
+            <div class="md:col-span-3">
               <label>Tarikh Akhir</label>
-              <input id="tarikhAkhir" type="date" required class="border px-2 py-2 w-full"/>
+              <input id="tarikhAkhir" type="date" class="mt-1 p-2 border rounded w-full" />
             </div>
-            <div class="col-span-1">
-              <label>Bil Hari</label>
-              <input id="bilHari" readonly class="border px-2 py-2 w-full bg-gray-100"/>
-            </div>
-            <div class="col-span-3">
+            <div class="md:col-span-3">
               <label>Nama Ketua Rombongan</label>
-              <input id="namaKetua" class="border px-2 py-2 w-full"/>
+              <input id="namaKetua" class="mt-1 p-2 border rounded w-full" />
             </div>
-            <div class="col-span-3">
-            m <label>No Tel Ketua Rombongan</label>
-              <input id="telKetua" class="border px-2 py-2 w-full"/>
+            <div class="md:col-span-3">
+              <label>No. Tel Ketua Rombongan</label>
+              <input id="telKetua" class="mt-1 p-2 border rounded w-full" />
             </div>
-            <div class="col-span-6">
-              <label>Tempat Lawatan (senarai)</label>
-              <textarea id="tempatLawatan" class="border px-2 py-2 w-full"></textarea>
+            <div class="md:col-span-6">
+              <label>Tempat Lawatan</label>
+              <textarea id="tempatLawatan" class="mt-1 p-2 border rounded w-full"></textarea>
             </div>
-            <div class="col-span-6">
+            <div class="md:col-span-6">
               <label>Alamat Penginapan</label>
-              <textarea id="alamatPenginapan" class="border px-2 py-2 w-full"></textarea>
+              <textarea id="alamatPenginapan" class="mt-1 p-2 border rounded w-full"></textarea>
             </div>
-            <div class="col-span-3">
+            <div class="md:col-span-3">
               <label>No. Tel Penginapan</label>
-              <input id="noTelPenginapan" class="border px-2 py-2 w-full" />
+              <input id="noTelPenginapan" class="mt-1 p-2 border rounded w-full" />
             </div>
           </div>
         </div>
 
-        <!-- C: Muat Naik Dokumen -->
-        <div class="border-b pb-4">
-          <h2 class="font-semibold">Bahagian C: Muat Naik Dokumen</h2>
-          <p class="text-sm text-gray-600">Muatturun fail PDF / imej yang diperlukan.</p>
-          <div class="mt-3 grid grid-cols-6 gap-4">
-            <div class="col-span-3">
+        <!-- C muat naik -->
+        <div>
+          <h2 class="text-lg font-semibold">Bahagian C: Muat Naik Dokumen</h2>
+          <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mt-3">
+            <!-- (Kod Bahagian C anda yang sedia ada) -->
+            <div class="md:col-span-3">
               <label>Kertas Kerja (PDF)</label>
-              <input id="fileKertasKerja" type="file" accept=".pdf" />
+              <input id="fileKertasKerja" type="file" accept=".pdf" class="mt-1" />
             </div>
-            <div class="col-span-3">
+            <div class="md:col-span-3">
               <label>Maklumat Anggota (PDF)</label>
-              <input id="fileMaklumatAnggota" type="file" accept=".pdf" />
+              <input id="fileMaklumatAnggota" type="file" accept=".pdf" class="mt-1" />
             </div>
-            <div class="col-span-3">
+            <div class="md:col-span-3">
               <label>Lesen Bas</label>
-              <input id="fileLesenBas" type="file" accept=".pdf,image/*" />
+              <input id="fileLesenBas" type="file" accept=".pdf,image/*" class="mt-1" />
             </div>
-            <div class="col-span-3">
+            <div class="md:col-span-3">
               <label>Lesen Pemandu</label>
-              <input id="fileLesenPemandu" type="file" accept=".pdf,image/*" />
+              <input id="fileLesenPemandu" type="file" accept=".pdf,image/*" class="mt-1" />
             </div>
-            <div class="col-span-6">
+            <div class="md:col-span-6">
               <label>Intipati Taklimat Keselamatan</label>
-              <input id="fileTaklimat" type="file" accept=".pdf" />
+              <input id="fileTaklimat" type="file" accept=".pdf" class="mt-1" />
             </div>
           </div>
         </div>
 
-        <!-- D: Kewangan -->
-        <div class="border-b pb-4">
-          <h2 class="font-semibold">Bahagian D: Maklumat Kewangan</h2>
-          <p class="text-sm text-gray-600">Isi bil & kutipan seorang (RM). Jumlah dikira automatik.</p>
-          <div class="mt-3 grid grid-cols-6 gap-4 items-end">
-            <!-- Murid -->
-            <div class="col-span-2 font-semibold">Murid</div>
-            <div class="col-span-1"><input id="muridBil" type="number" value="0" class="border px-2 py-2 w-full"/></div>
-            <div class="col-span-1"><input id="muridKutipan" type="number" step="0.01" value="0.00" class="border px-2 py-2 w-full"/></div>
-A         <div class="col-span-2"><input id="muridJumlah" readonly class="border px-2 py-2 w-full bg-gray-100"/></div>
+        <!-- D kewangan -->
+        <div>
+          <h2 class="text-lg font-semibold">Bahagian D: Maklumat Kewangan</h2>
+          <div class="mt-3 overflow-auto">
+            <table class="min-w-full border">
+              <thead class="bg-gray-50"><tr>
+                <!-- (Kod Jadual Kewangan anda yang sedia ada) -->
+                <th class="p-2">Sumber</th><th class="p-2">Bil</th><th class="p-2">Kutipan</th><th class="p-2">Jumlah</th>
+              </tr></thead>
+              <tbody>
+                <tr>
+                  <td class="p-2">Murid</td>
+                  <td class="p-2"><input id="kew_murid_bil" type="number" value="0" class="p-1 border rounded w-20"/></td>
+                  <td class="p-2"><input id="kew_murid_kutipan" type="number" value="0" step="0.01" class="p-1 border rounded w-28"/></td>
+                  <td class="p-2"><input id="kew_murid_jumlah" readonly value="0.00" class="p-1 bg-gray-100 border rounded w-32"/></td>
+                </tr>
+                <tr>
+                  <td class="p-2">Guru</td>
+                  <td class="p-2"><input id="kew_guru_bil" type="number" value="0" class="p-1 border rounded w-20"/></td>
+                  <td class="p-2"><input id="kew_guru_kutipan" type="number" value="0" step="0.01" class="p-1 border rounded w-28"/></td>
+                  <td class="p-2"><input id="kew_guru_jumlah" readonly value="0.00" class="p-1 bg-gray-100 border rounded w-32"/></td>
+                </tr>
+                <tr>
+                  <td class="p-2">PCG</td>
+                  <td class="p-2"><input id="kew_pcg_bil" type="number" value="0" class="p-1 border rounded w-20"/></td>
+                  <td class="p-2"><input id="kew_pcg_kutipan" type="number" value="0" step="0.01" class="p-1 border rounded w-28"/></td>
 
-            <!-- Guru -->
-            <div class="col-span-2 font-semibold">Guru</div>
-            <div class="col-span-1"><input id="guruBil" type="number" value="0" class="border px-2 py-2 w-full"/></div>
-            <div class="col-span-1"><input id="guruKutipan" type="number" step="0.01" value="0.00" class="border px-2 py-2 w-full"/></div>
-            <div class="col-span-2"><input id="guruJumlah" readonly class="border px-2 py-2 w-full bg-gray-100"/></div>
-
-            <!-- Akaun Sekolah (PCG & LPBT) - only total fields -->
-            <div class="col-span-2 font-semibold">Akaun Sekolah (PCG)</div>
-            <div class="col-span-4"><input id="pcgJumlah" type="number" step="0.01" value="0.00" class="border px-2 py-2 w-full"/></div>
-
-            <div class="col-span-2 font-semibold">Akaun Sekolah (LPBT)</div>
-            <div class="col-span-4"><input id="lpbtJumlah" type="number" step="0.01" value="0.00" class="border px-2 py-2 w-full"/></div>
-
-            <!-- Asrama -->
-            <div class="col-span-2 font-semibold">Asrama (BMA)</div>
-            <div class="col-span-4"><input id="bmaJumlah" type="number" step="0.01" value="0.00" class="border px-2 py-2 w-full"/></div>
-
-            <div class="col-span-2 font-semibold">Asrama (BPP)</div>
-            <div class="col-span-4"><input id="bppJumlah" type="number" step="0.01" value="0.00" class="border px-2 py-2 w-full"/></div>
-
-            <div class="col-span-4 text-right font-semibold">Jumlah Keseluruhan (RM)</div>
-            <div class="col-span-2"><input id="jumlahBesar" readonly class="border px-2 py-2 w-full bg-gray-100"/></div>
+                  <td class="p-2"><input id="kew_pcg_jumlah" readonly value="0.00" class="p-1 bg-gray-100 border rounded w-32"/></td>
+                </tr>
+                <tr>
+                  <td class="p-2">LPBT</td>
+                  <td class="p-2"><input id="kew_lpbt_bil" type="number" value="0" class="p-1 border rounded w-20"/></td>
+                  <td class="p-2"><input id="kew_lpbt_kutipan" type="number" value="0" step="0.01" class="p-1 border rounded w-28"/></td>
+                  <td class="p-2"><input id="kew_lpbt_jumlah" readonly value="0.00" class="p-1 bg-gray-100 border rounded w-32"/></td>
+                </tr>
+                <tr>
+                  <td class="p-2">BMA</td>
+                  <td class="p-2"><input id="kew_bma_bil" type="number" value="0" class="p-1 border rounded w-20"/></td>
+                  <td class="p-2"><input id="kew_bma_kutipan" type="number" value="0" step="0.01" class="p-1 border rounded w-28"/></td>
+-                 <td class="p-2"><input id="kew_bma_jumlah" readonly value="0.00" class="p-1 bg-gray-100 border rounded w-32"/></td>
+                </tr>
+                <tr>
+                  <td class="p-2">BPP</td>
+                  <td class="p-2"><input id="kew_bpp_bil" type="number" value="0" class="p-1 border rounded w-20"/></td>
+                  <td class="p-2"><input id="kew_bpp_kutipan" type="number" value="0" step="0.01" class="p-1 border rounded w-28"/></td>
+A               <td class="p-2"><input id="kew_bpp_jumlah" readonly value="0.00" class="p-1 bg-gray-100 border rounded w-32"/></td>
+                </tr>
+                <tr class="bg-gray-50">
+                  <td colspan="3" class="p-2 text-right font-semibold">Jumlah Keseluruhan (RM)</td>
+                  <td class="p-2"><input id="kew_jumlah_besar" readonly value="0.00" class="p-1 bg-gray-200 border rounded w-32"/></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
         <div class="flex justify-end items-center gap-4">
-          <div id="loading" class="text-blue-600 hidden">Menghantar...</div>
+          <div id="loading" class="hidden text-blue-600">Menghantar...</div>
           <button type="submit" id="btnSubmit" class="bg-blue-600 text-white rounded px-4 py-2">Hantar Permohonan</button>
         </div>
       </form>
@@ -204,13 +215,14 @@ A         <div class="col-span-2"><input id="muridJumlah" readonly class="bo
 
     <!-- CONTENT: Dashboard -->
     <div id="tab-dashboard" class="tab-content bg-white p-6 rounded-lg shadow hidden">
+        <!-- (Kod Dashboard anda yang sedia ada) -->
       <h2 class="text-xl font-semibold mb-3">Dashboard JPN</h2>
       <p class="text-sm text-gray-600 mb-3">Masukkan kata laluan untuk memuatkan data permohonan.</p>
       <div class="flex gap-3 mb-4">
         <input id="dashboardToken" placeholder="Kata Laluan" type="password" class="border px-2 py-2 w-1/4"/>
         <button id="btnLoadData" class="bg-blue-600 text-white px-4 py-2 rounded">Muatkan Data</button>
         <div id="dashboardMsg" class="text-sm text-red-600 ml-3"></div>
-  A   </div>
+      </div>
       <div id="dashboardTableWrap" class="overflow-x-auto hidden">
         <table id="dashboardTable" class="min-w-full table-auto border-collapse">
           <!-- headers built by JS -->
@@ -220,16 +232,17 @@ A         <div class="col-span-2"><input id="muridJumlah" readonly class="bo
 
     <!-- CONTENT: Kelulusan Pengarah -->
     <div id="tab-kelulusan" class="tab-content bg-white p-6 rounded-lg shadow hidden">
+        <!-- (Kod Kelulusan anda yang sedia ada) -->
       <h2 class="text-xl font-semibold mb-3">Kelulusan Pengarah</h2>
       <p class="text-sm text-gray-600">(Fungsi ini untuk pelulus akhir - akan memaparkan permohonan yang berstatus Lulus JPN)</p>
-      <!-- implement later: similar table but filtered status -->
       <div id="kelulusanContent" class="mt-4">Dalam pembangunan.</div>
     </div>
   </div>
 
   <!-- Modal for Query notes -->
   <div id="modalQuery" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
-m   <div class="bg-white p-4 rounded w-1/3">
+    <!-- (Kod Modal anda yang sedia ada) -->
+    <div class="bg-white p-4 rounded w-1/3">
       <h3 class="font-semibold mb-2">Tulis Catatan Query</h3>
       <textarea id="modalCatatan" class="border px-2 py-2 w-full h-28"></textarea>
       <div class="flex justify-end gap-2 mt-3">
@@ -241,14 +254,14 @@ m   <div class="bg-white p-4 rounded w-1/3">
 
 <script>
 /* ============ Konfigurasi ============ */
-const SCRIPT_URL = "httpsIAIKAN JIKA URL ANDA BERBEZA";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXfvUGbXGZ8X-8OVhGRI4Y8-HJaXUbStnkiSj_DvwnqCuyPAl9eQOgNoZn1iru85lE/exec";
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRZ4X7exDV-Bu9BSV0IjGswnQjpoYBgXBT-llAz2Iwr4z8fGWV0VX-DWzzYAEMmq-CWGqlXDayGYED/pub?gid=0&single=true&output=csv";
 const TOKEN = "12345"; // password for dashboard actions
 
 /* ============ Globals ============ */
 let DB_SEKOLAH = null;
 
-/* DOM refs */
+/* (DOM refs - semua kod 'const' anda yang sedia ada) */
 const dbStatus = document.getElementById('dbStatus');
 const kodSekolah = document.getElementById('kodSekolah');
 const namaSekolah = document.getElementById('namaSekolah');
@@ -268,8 +281,6 @@ const queryId = document.getElementById('queryId');
 const queryEmail = document.getElementById('queryEmail');
 const btnCariQuery = document.getElementById('btnCariQuery');
 const queryError = document.getElementById('queryError');
-
-/* financial fields */
 const muridBil = document.getElementById('muridBil');
 const muridKutipan = document.getElementById('muridKutipan');
 const muridJumlah = document.getElementById('muridJumlah');
@@ -281,24 +292,18 @@ const lpbtJumlah = document.getElementById('lpbtJumlah');
 const bmaJumlah = document.getElementById('bmaJumlah');
 const bppJumlah = document.getElementById('bppJumlah');
 const jumlahBesar = document.getElementById('jumlahBesar');
-
 const fileKertas = document.getElementById('fileKertasKerja');
 const fileMaklumat = document.getElementById('fileMaklumatAnggota');
 const fileLesenBas = document.getElementById('fileLesenBas');
 const fileLesenPemandu = document.getElementById('fileLesenPemandu');
 const fileTaklimat = document.getElementById('fileTaklimat');
-
 const modeBaru = document.getElementById('modeBaru');
 const modeQuery = document.getElementById('modeQuery');
-
-/* dashboard elements */
 const btnLoadData = document.getElementById('btnLoadData');
 const dashboardToken = document.getElementById('dashboardToken');
 const dashboardMsg = document.getElementById('dashboardMsg');
 const dashboardTableWrap = document.getElementById('dashboardTableWrap');
 const dashboardTable = document.getElementById('dashboardTable');
-
-/* modal */
 const modalQuery = document.getElementById('modalQuery');
 const modalCatatan = document.getElementById('modalCatatan');
 const modalCancel = document.getElementById('modalCancel');
@@ -360,33 +365,34 @@ function toggleMode(mode) {
   if (mode === 'baru') {
     isQueryMode.value = "false";
     querySection.classList.add('hidden');
+    frm.classList.remove('hidden'); // PEMBETULAN: Tunjukkan borang
     document.getElementById('frm').reset();
     clearSchoolFields();
-A   successBox.classList.add('hidden');
+    successBox.classList.add('hidden');
     errorBox.classList.add('hidden');
   } else {
     isQueryMode.value = "true";
     querySection.classList.remove('hidden');
+    frm.classList.add('hidden'); // PEMBETULAN: Sorok borang
   }
 }
 
 /* =========================
    Load School DB from published CSV
-   Simple CSV parsing
    ========================= */
 async function loadSchoolDB(){
   try {
     const res = await fetch(CSV_URL);
     if (!res.ok) throw new Error("Gagal muat CSV");
     const txt = await res.text();
-    // parse CSV (simple)
+    // parse CSV
     const lines = txt.trim().split('\n');
     const headers = lines[0].split(',').map(h => h.replace(/(^"|"$)/g,'').trim());
-iOS   const idxKod = headers.indexOf('KOD_SEKOLAH');
+    const idxKod = headers.indexOf('KOD_SEKOLAH');
     const idxNama = headers.indexOf('NAMA_SEKOLAH');
     const idxDaerah = headers.indexOf('DAERAH');
     const idxKategori = headers.indexOf('KATEGORI');
-    const db = {};
+D   const db = {};
     for (let i=1;i<lines.length;i++){
       const vals = parseCsvLine(lines[i]);
       const kod = (vals[idxKod] || "").toString().trim().toUpperCase();
@@ -399,7 +405,7 @@ iOS   const idxKod = headers.indexOf('KOD_SEKOLAH');
       }
     }
     DB_SEKOLAH = db;
-    dbStatus.textContent = `STATUS: Pangkalan data sekolah sedia (${Object.keys(db).length} rekod).`;
+_   dbStatus.textContent = `STATUS: Pangkalan data sekolah sedia (${Object.keys(db).length} rekod).`;
     dbStatus.classList.remove('bg-blue-50');
     dbStatus.classList.add('bg-green-50','text-green-800');
     kodSekolah.disabled = false;
@@ -413,9 +419,9 @@ iOS   const idxKod = headers.indexOf('KOD_SEKOLAH');
     dbStatus.classList.add('bg-red-100','text-red-800');
   }
 }
+
 function parseCsvLine(line){
   // naive CSV parser for simple values (no embedded commas)
-  // remove surrounding quotes and trim
   const parts = [];
   let cur = '', inQuotes=false;
   for (let i=0;i<line.length;i++){
@@ -427,10 +433,11 @@ function parseCsvLine(line){
     cur += ch;
   }
   parts.push(cur);
-Two   return parts.map(p => p.trim());
+  return parts.map(p => p.trim());
 }
 
 function lookupSekolah(){
+  // (Kod lookupSekolah anda yang sedia ada)
   lookupError.classList.add('hidden');
   const code = kodSekolah.value.trim().toUpperCase();
   if (!DB_SEKOLAH) { lookupError.textContent = "DB sekolah belum sedia"; lookupError.classList.remove('hidden'); return; }
@@ -454,19 +461,17 @@ function clearSchoolFields(){
    Financial calc
    ========================= */
 function recalc(){
+  // (Kod recalc anda yang sedia ada)
   const mBil = parseFloat(muridBil.value) || 0;
   const mKutipan = parseFloat(muridKutipan.value) || 0;
-A   muridJumlah.value = (mBil * mKutipan).toFixed(2);
-
+  muridJumlah.value = (mBil * mKutipan).toFixed(2);
   const gBil = parseFloat(guruBil.value) || 0;
   const gKutipan = parseFloat(guruKutipan.value) || 0;
   guruJumlah.value = (gBil * gKutipan).toFixed(2);
-
   const pcg = parseFloat(pcgJumlah.value) || 0;
   const lpbt = parseFloat(lpbtJumlah.value) || 0;
   const bma = parseFloat(bmaJumlah.value) || 0;
   const bpp = parseFloat(bppJumlah.value) || 0;
-
   const total = (parseFloat(muridJumlah.value)||0) + (parseFloat(guruJumlah.value)||0) + pcg + lpbt + bma + bpp;
   jumlahBesar.value = total.toFixed(2);
 }
@@ -475,6 +480,7 @@ A   muridJumlah.value = (mBil * mKutipan).toFixed(2);
    read file as base64 (without data:prefix)
    ========================= */
 function readFileAsBase64(file){
+  // (Kod readFileAsBase64 anda yang sedia ada)
   return new Promise((resolve,reject)=>{
     const reader = new FileReader();
     reader.onload = ()=> {
@@ -484,21 +490,18 @@ function readFileAsBase64(file){
     };
     reader.onerror = e => reject(e);
     reader.readAsDataURL(file);
-A });
+  });
 }
 
 /* =========================
    Handle form submit (baru or query/resubmit)
-   Uses Content-Type: text/plain to avoid preflight
    ========================= */
 async function handleSubmit(e){
+  // (Kod handleSubmit anda yang sedia ada)
   e.preventDefault();
   errorBox.classList.add('hidden'); successBox.classList.add('hidden');
-
-  // basic validation
   if (!namaSekolah.value) { showError("Sila masukkan kod sekolah yang sah."); return; }
   if (!document.getElementById('emailSekolah').value) { showError("Sila isi email sekolah."); return; }
-
   setLoading(true);
   try {
     const isQuery = isQueryMode.value === 'true';
@@ -514,7 +517,8 @@ async function handleSubmit(e){
     form["Nama Ketua Rombongan"] = document.getElementById('namaKetua').value;
     form["No Tel Ketua Rombongan"] = document.getElementById('telKetua').value;
     form["Tempat Lawatan"] = document.getElementById('tempatLawatan').value;
-Two   form["Alamat Penginapan"] = document.getElementById('alamatPenginapan').value;
+    form["Alamat Penginapan"] = document.getElementById('alamatPenginapan').value;
+    form["No Tel Penginapan"] = document.getElementById('noTelPenginapan').value; // PEMBETULAN PEPIJAT: Tambah No Tel Penginapan
 
     if (isQuery) form.idPermohonan = currentPermohonanId.value;
 
@@ -526,7 +530,7 @@ Two   form["Alamat Penginapan"] = document.getElementById('alamatPenginapan').v
       "Kewangan_Guru_Bil": guruBil.value,
       "Kewangan_Guru_Kutipan": guruKutipan.value,
       "Kewangan_Guru_Jumlah": guruJumlah.value,
-      "Kewangan_AkaunSek_PCG_Jumlah": pcgJumlah.value,
+      "Kewangan_AkaunSek_PCG_Jumlah": pcgJumlah.value, // Dihantar sebagai Jumlah sahaja
       "Kewangan_AkaunSek_LPBT_Jumlah": lpbtJumlah.value,
       "Kewangan_Asrama_BMA_Jumlah": bmaJumlah.value,
       "Kewangan_Asrama_BPP_Jumlah": bppJumlah.value,
@@ -555,14 +559,12 @@ Two   form["Alamat Penginapan"] = document.getElementById('alamatPenginapan').v
     }
     form.files = filesObj;
 
-    console.log("PAYLOAD:", payload);
-
-    // Hantar sebagai text/plain untuk kurangkan preflight
+t   // Hantar sebagai text/plain untuk kurangkan preflight
     const resp = await fetch(SCRIPT_URL, {
       method: 'POST',
       mode: 'cors',
       headers: { 'Content-Type': 'text/plain' },
-G     body: JSON.stringify(form)
+      body: JSON.stringify(form)
     });
 
     const txt = await resp.text();
@@ -570,33 +572,44 @@ G     body: JSON.stringify(form)
     try { json = JSON.parse(txt); } catch (e) { throw new Error("Invalid JSON from server: " + txt); }
 
     if (json.status && (json.status === 'success')) {
-      showSuccess(json.idPermohonan || json.idPermohonan || json.idPermohonan || json.idPermohonan || json.idPermohonan || json.idPermohonan);
-    } else {
+      showSuccess(json.idPermohonan); // PEMBETULAN: 'idPermohonan' (bukan carian berulang)
+  A } else {
       throw new Error(json.message || "Ralat dari server.");
     }
 
   } catch (err) {
     console.error("handleFormSubmit Error:", err);
-  m showError("Gagal hantar: " + (err.message || err));
-  } finally {
-    setTimeout(()=>{ document.getElementById('btnSubmit').disabled = false; }, 1000);
-    document.getElementById('loading').classList.add('hidden');
+    showError("Gagal hantar: " + (err.message || err));
+I } finally {
+    setLoading(false); // PEMBETULAN: Panggil fungsi setLoading
   }
 }
 
 function setLoading(flag){
   if(flag){ loadingEl.classList.remove('hidden'); btnSubmit.disabled=true; btnSubmit.classList.add('opacity-50'); }
-F   else { loadingEl.classList.add('hidden'); btnSubmit.disabled=false; btnSubmit.classList.remove('opacity-50'); }
+  else { loadingEl.classList.add('hidden'); btnSubmit.disabled=false; btnSubmit.classList.remove('opacity-50'); }
 }
 function showError(msg){
   errorBox.textContent = msg; errorBox.classList.remove('hidden');
   window.scrollTo({ top: document.body.scrollHeight, behavior:'smooth' });
+}
+function showSuccess(id) { // PEMBETULAN: Cipta fungsi 'showSuccess'
+  successId.textContent = id;
+  successBox.classList.remove('hidden');
+  errorBox.classList.add('hidden');
+  setTimeout(()=> {
+    frm.reset();
+    successBox.classList.add('hidden');
+    clearSchoolFields();
+    toggleMode('baru');
+  }, 5000);
 }
 
 /* =========================
    Query: load and fill form for edit
    ========================= */
 async function doCariQuery(){
+  // (Kod doCariQuery anda yang sedia ada)
   const id = queryId.value.trim(); const email = queryEmail.value.trim();
   if (!id || !email) { queryError.textContent = "Sila isi ID & email"; queryError.classList.remove('hidden'); return; }
   btnCariQuery.disabled = true; btnCariQuery.textContent = 'Mencari...'; queryError.classList.add('hidden');
@@ -612,35 +625,38 @@ async function doCariQuery(){
       document.getElementById('frm').classList.remove('hidden');
     } else {
       throw new Error(data.message || 'Ralat');
-  Data   }
+    }
   } catch (err) {
     queryError.textContent = 'Ralat: ' + err.message; queryError.classList.remove('hidden');
   } finally {
     btnCariQuery.disabled = false; btnCariQuery.textContent = 'Cari Permohonan';
   }
 }
+
 function fillFormFromData(data) {
+  // (Kod fillFormFromData anda yang sedia ada)
   // data uses sheet headers as keys
   kodSekolah.value = data['Kod Sekolah'] || data['KodSekolah'] || '';
   namaSekolah.value = data['Nama Sekolah'] || data['NamaSekolah'] || '';
-  daerah.value = data['Daerah'] || '';
+Two   daerah.value = data['Daerah'] || '';
   kategori.value = data['Kategori'] || '';
-Two   document.getElementById('emailSekolah').value = data['Email Rasmi Sekolah'] || data['Email'] || '';
+  document.getElementById('emailSekolah').value = data['Email Rasmi Sekolah'] || data['Email'] || '';
   document.getElementById('tarikhMula').value = (data['Tarikh Mula']||'').split('T')[0] || '';
   document.getElementById('tarikhAkhir').value = (data['Tarikh Akhir']||'').split('T')[0] || '';
   document.getElementById('namaKetua').value = data['Nama Ketua Rombongan'] || '';
   document.getElementById('telKetua').value = data['No Tel Ketua Rombongan'] || '';
   document.getElementById('tempatLawatan').value = data['Tempat Lawatan'] || '';
   document.getElementById('alamatPenginapan').value = data['Alamat Penginapan'] || '';
+  document.getElementById('noTelPenginapan').value = data['No Tel Penginapan'] || ''; // PEMBETULAN PEPIJAT: Tambah No Tel Penginapan
 
-i   // financial
+  // financial
   muridBil.value = data['Kewangan_Murid_Bil'] || 0;
   muridKutipan.value = data['Kewangan_Murid_Kutipan'] || 0;
   guruBil.value = data['Kewangan_Guru_Bil'] || 0;
   guruKutipan.value = data['Kewangan_Guru_Kutipan'] || 0;
   pcgJumlah.value = data['Kewangan_AkaunSek_PCG_Jumlah'] || 0;
   lpbtJumlah.value = data['Kewangan_AkaunSek_LPBT_Jumlah'] || 0;
-OS   bmaJumlah.value = data['Kewangan_Asrama_BMA_Jumlah'] || 0;
+  bmaJumlah.value = data['Kewangan_Asrama_BMA_Jumlah'] || 0;
   bppJumlah.value = data['Kewangan_Asrama_BPP_Jumlah'] || 0;
   recalc();
 }
@@ -649,6 +665,7 @@ OS   bmaJumlah.value = data['Kewangan_Asrama_BMA_Jumlah'] || 0;
    Dashboard: load data (private)
    ========================= */
 async function loadDashboardData(){
+  // (Kod loadDashboardData anda yang sedia ada)
   dashboardMsg.textContent = '';
   const token = dashboardToken.value.trim();
   if (!token) { dashboardMsg.textContent = "Sila masukkan kata laluan."; return; }
@@ -666,6 +683,7 @@ async function loadDashboardData(){
    Render dashboard table with action buttons
    ========================= */
 function renderDashboardTable(rows) {
+  // (Kod renderDashboardTable anda yang sedia ada)
   dashboardTableWrap.classList.remove('hidden');
   // Build header
   const headers = ["Timestamp","Email Rasmi Sekolah","Kod Sekolah","Nama Sekolah","Daerah","Kategori","Tarikh Mula","Tarikh Akhir","Tempat Lawatan","Alamat Penginapan","ID Permohonan","Status Permohonan","Catatan Query","Disemak Oleh","LinkKertasKerja","LinkMaklumatAnggota","LinkLesenBas","LinkLesenPemandu","LinkTaklimat","Tindakan"];
@@ -674,7 +692,7 @@ function renderDashboardTable(rows) {
   html += "</tr></thead><tbody>";
   rows.forEach((r, idx) => {
     const id = r['ID Permohonan'] || r['IDPermohonan'] || '';
-Two     const status = r['Status Permohonan'] || r['StatusPermohonan'] || '';
+    const status = r['Status Permohonan'] || r['StatusPermohonan'] || '';
     html += `<tr class="border-b">`;
     headers.forEach(h => {
       if (h === "Tindakan") {
@@ -690,7 +708,7 @@ t       </td>`;
         } else html += `<td class="p-2 border"></td>`;
       } else {
         const val = r[h] || r[h.replace('_',' ')] || '';
-S       html += `<td class="p-2 border">${escapeHtml(val)}</td>`;
+s       html += `<td class="p-2 border">${escapeHtml(val)}</td>`;
       }
     });
     html += `</tr>`;
@@ -700,7 +718,7 @@ S       html += `<td class="p-2 border">${escapeHtml(val)}</td>`;
 
   // attach events for action buttons
   document.querySelectorAll('.btn-view').forEach(b => b.addEventListener('click', e => {
-i     const id = e.currentTarget.dataset.id;
+A     const id = e.currentTarget.dataset.id;
     openDetail(id);
   }));
   document.querySelectorAll('.btn-query').forEach(b => b.addEventListener('click', e => {
@@ -723,13 +741,14 @@ function openDetail(id) {
 /* Query flow: open modal to type note, then POST updateStatus with status=Query */
 let currentQueryId = null;
 function startQueryFlow(id) {
-  currentQueryId = id;
+source   currentQueryId = id;
   modalCatatan.value = "";
   modalQuery.classList.remove('hidden');
   modalSendQuery.onclick = sendQuery;
 }
 
 async function sendQuery(){
+  // (Kod sendQuery anda yang sedia ada)
   const note = modalCatatan.value.trim();
   if (!note) { alert("Sila masukkan catatan"); return; }
   // send updateStatus
@@ -737,12 +756,12 @@ async function sendQuery(){
     const payload = {
       action: "updateStatus",
       token: TOKEN,
-      idPermohonan: currentQueryId,
+    t idPermohonan: currentQueryId,
       status: "Query",
       catatan: note
     };
     const res = await fetch(SCRIPT_URL, {
-  E   method: 'POST',
+      method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload)
     });
@@ -755,12 +774,13 @@ async function sendQuery(){
       alert('Gagal: ' + json.message);
     }
   } catch (err) {
-  Imessage alert('Gagal hantar: ' + err.message);
+    alert('Gagal hantar: ' + err.message);
   }
 }
 
 /* Lulus flow: call updateStatus to Lulus JPN and then (optionally) call janaSurat */
 async function doLulus(id) {
+  // (Kod doLulus anda yang sedia ada)
   if (!confirm('Tindakan Lulus JPN akan melakukan notifikasi. Teruskan?')) return;
   try {
     const payload = { action: 'updateStatus', token: TOKEN, idPermohonan: id, status: 'Lulus JPN' };
@@ -782,7 +802,7 @@ async function doLulus(id) {
 
     loadDashboardData();
   } catch (err) {
-Data   alert('Ralat: ' + err.message);
+    alert('Ralat: ' + err.message);
   }
 }
 
