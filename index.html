@@ -87,7 +87,7 @@
         <!-- =================================================================== -->
         <!-- FOKUS KITA: Konten Tab 1: Borang Permohonan Kustom -->
         <!-- =================================================================== -->
-        <div id="content-borang" class="tab-content bg-white p-8 rounded-lg shadow-lg" style="display: block;">
+        <div id="content-borang" class="tab-content bg-white p-8 rounded-lg shadow-lg"> <!-- PEMBETULAN: 'style="display: block;"' dibuang, serahkan pada JS -->
 
             <!-- Status Pangkalan Data Sekolah -->
             <div id="dbStatus" class="mb-4 p-3 bg-blue-100 text-blue-800 rounded-md text-sm">
@@ -119,7 +119,7 @@
                         Cari Permohonan
                     </button>
                 </div>
-                 <p id="queryLookupError" class="text-red-600 text-sm mt-2" style="display: none;"></p>
+                 <p id="queryLookupError" class="text-red-600 text-sm mt-2 hidden"></p> <!-- PEMBETULAN: guna kelas hidden -->
             </div>
 
 
@@ -144,7 +144,7 @@
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
                             </div>
-                            <p id="lookupError" class="text-red-600 text-xs mt-1" style="display: none;"></p>
+                            <p id="lookupError" class="text-red-600 text-xs mt-1 hidden"></p> <!-- PEMBETULAN: guna kelas hidden -->
                         </div>
                         <div class="sm:col-span-4">
                             <label for="namaSekolah" class="block text-sm font-medium leading-6 text-gray-900">Nama Sekolah</label>
@@ -172,7 +172,7 @@
                         <div class="sm:col-span-3">
                             <label for="tarikhMula" class="block text-sm font-medium leading-6 text-gray-900">Tarikh Mula Lawatan</label>
                             <input type="date" name="tarikhMula" id="tarikhMula" required class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
-                            <p id="tarikhError" class="text-red-600 text-xs mt-1" style="display: none;">Tarikh mesti 30 hari dari sekarang.</p>
+                            <p id="tarikhError" class="text-red-600 text-xs mt-1 hidden"></p> <!-- PEMBETULAN: guna kelas hidden -->
                         </div>
                         <div class="sm:col-span-3">
                             <label for="tarikhAkhir" class="block text-sm font-medium leading-6 text-gray-900">Tarikh Akhir Lawatan</label>
@@ -311,7 +311,7 @@
                     <button type="submit" id="submitButton" class="rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
                         Hantar Permohonan
                     </button>
-                    <div id="loading" class="text-blue-600 font-medium">Menghantar...</div>
+                    <div id="loading" class="text-blue-600 font-medium hidden">Menghantar...</div> <!-- PEMBETULAN: guna kelas hidden -->
                 </div>
             </form>
             
@@ -329,9 +329,9 @@
         <!-- =================================================================== -->
         <!-- TAB DI BAWAH INI DISOROKKAN BUAT MASA SEKARANG -->
         <!-- =================================================================== -->
-        <div id="password-gate" class="tab-content bg-white p-8 rounded-lg shadow-lg" style="display: none;"></div>
-        <div id="content-dashboard" class="tab-content bg-white p-8 rounded-lg shadow-lg" style="display: none;"></div>
-        <div id="content-kelulusan" class="tab-content bg-white p-8 rounded-lg shadow-lg" style="display: none;"></div>
+        <div id="password-gate" class="tab-content bg-white p-8 rounded-lg shadow-lg hidden"></div> <!-- PEMBETULAN: guna kelas hidden -->
+        <div id="content-dashboard" class="tab-content bg-white p-8 rounded-lg shadow-lg hidden"></div> <!-- PEMBETULAN: guna kelas hidden -->
+        <div id="content-kelulusan" class="tab-content bg-white p-8 rounded-lg shadow-lg hidden"></div> <!-- PEMBETULAN: guna kelas hidden -->
     </div>
 
     <script>
@@ -342,7 +342,7 @@
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyeMcLeTLI3CzB3IL7MXhUmL-9oBADYUEQw28joiy_n1fAcbXbzheT-bSoCwt0zQ-jTaA/exec"; 
     
     // GANTIKAN DENGAN URL CSV DARI GOOGLE SHEET (Fasa 3, Langkah 8)
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRZ4X7exDV-Bu9BSV0IjGswnQjpoYBgXBT-llAz2Iwr4z8fGWV0VX-DWzzYAEMmq-CWGqlXDayGYED/pub?gid=0&single=true&output=csv"; 
+    const CSV_URL = "URL_CSV_ANDA_DARI_GOOGLE_SHEET"; 
     // =================================================================
 
     // Pemboleh ubah global
@@ -356,11 +356,7 @@
         // Elemen DOM Borang Utama
         const elBorangLawatan = document.getElementById('borangLawatan');
         const loadingSpinner = document.getElementById('loading');
-        const submitButton = document.getElementById('submitButton');
-        const borangSuccess = document.getElementById('borangSuccess');
-        const borangError = document.getElementById('borangError');
-        const successId = document.getElementById('successId');
-        const errorText = document.getElementById('errorText');
+// ... existing code ... -->
         const elTarikhMula = document.getElementById('tarikhMula');
         const elTarikhError = document.getElementById('tarikhError');
         
@@ -476,7 +472,7 @@
         // Fungsi Navigasi Tab
         window.showTab = function(tabName) { // Letak di 'window' supaya 'onclick' HTML boleh capai
             document.querySelectorAll('.tab-content').forEach(content => {
-                content.style.display = 'none';
+                content.classList.add('hidden'); // PEMBETULAN
             });
             document.querySelectorAll('.tab-button').forEach(button => {
                 button.classList.remove('tab-active');
@@ -486,12 +482,12 @@
             });
             
             if (tabName === 'borang') {
-                 document.getElementById('content-borang').style.display = 'block';
+                 document.getElementById('content-borang').classList.remove('hidden'); // PEMBETULAN
                  document.getElementById('tab-borang').classList.add('tab-active');
             } else {
                  // Guna 'alert' kustom yang tidak menyekat
                  showError("Tab ini sedang dalam pembinaan.");
-                 document.getElementById('content-borang').style.display = 'block';
+                 document.getElementById('content-borang').classList.remove('hidden'); // PEMBETULAN
                  document.getElementById('tab-borang').classList.add('tab-active');
             }
         }
@@ -502,14 +498,14 @@
              resetBorangPenuh();
              
              if (mode === 'baru') {
-                elBorangLawatan.style.display = 'block';
-                elQueryLookupSection.style.display = 'none';
+                elBorangLawatan.classList.remove('hidden'); // PEMBETULAN
+                elQueryLookupSection.classList.add('hidden'); // PEMBETULAN
                 elBtnModeBaru.classList.add('active');
                 elBtnModeQuery.classList.remove('active');
                 
                 elIsQueryMode.value = 'false';
                 elCurrentPermohonanId.value = '';
-                elQueryFileWarning.style.display = 'none';
+                elQueryFileWarning.classList.add('hidden'); // PEMBETULAN
                 
                 // Tetapkan semula 'required' pada fail
                 document.getElementById('kertasKerja').required = true;
@@ -519,13 +515,13 @@
                 document.getElementById('lampiranTaklimat').required = true;
                 
              } else if (mode === 'query') {
-                elBorangLawatan.style.display = 'none';
-                elQueryLookupSection.style.display = 'block';
+                elBorangLawatan.classList.add('hidden'); // PEMBETULAN
+                elQueryLookupSection.classList.remove('hidden'); // PEMBETULAN
                 elBtnModeBaru.classList.remove('active');
                 elBtnModeQuery.classList.add('active');
                 
                 elIsQueryMode.value = 'true';
-                elQueryFileWarning.style.display = 'block';
+                elQueryFileWarning.classList.remove('hidden'); // PEMBETULAN
 
                 // Dalam mod query, fail tidak wajib diisi
                 document.getElementById('kertasKerja').required = false;
@@ -543,13 +539,13 @@
             
             if (!id || !email) {
                 elQueryLookupError.textContent = "Sila masukkan ID Permohonan dan E-mel.";
-                elQueryLookupError.style.display = 'block';
+                elQueryLookupError.classList.remove('hidden'); // PEMBETULAN
                 return;
             }
             
             elBtnCariQuery.disabled = true;
             elBtnCariQuery.textContent = "Mencari...";
-            elQueryLookupError.style.display = 'none';
+            elQueryLookupError.classList.add('hidden'); // PEMBETULAN
             
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=getPermohonanForEdit&id=${encodeURIComponent(id)}&email=${encodeURIComponent(email)}`, { method: 'GET' });
@@ -558,8 +554,8 @@
                 if (response.ok && data.status === "success") {
                     // Berjaya! Isi borang
                     fillBorang(data.data);
-                    elBorangLawatan.style.display = 'block'; // Tunjukkan borang
-                    elQueryLookupSection.style.display = 'none'; // Sorok carian
+                    elBorangLawatan.classList.remove('hidden'); // PEMBETULAN // Tunjukkan borang
+                    elQueryLookupSection.classList.add('hidden'); // PEMBETULAN // Sorok carian
                     elCurrentPermohonanId.value = id; // Simpan ID untuk dihantar
                 } else {
                     throw new Error(data.message || "Ralat tidak diketahui");
@@ -567,7 +563,7 @@
             } catch (err) {
                 console.error("Ralat cariQuery:", err);
                 elQueryLookupError.textContent = `Ralat: ${err.message}. Pastikan ID, E-mel, dan URL API adalah betul.`;
-                elQueryLookupError.style.display = 'block';
+                elQueryLookupError.classList.remove('hidden'); // PEMBETULAN
             } finally {
                 elBtnCariQuery.disabled = false;
                 elBtnCariQuery.textContent = "Cari Permohonan";
@@ -631,7 +627,7 @@
         window.validateTarikhMula = function() {
             // Jika dalam mod Query, ABAIKAN validasi 30 hari
             if (elIsQueryMode.value === 'true') {
-                elTarikhError.style.display = 'none';
+                elTarikhError.classList.add('hidden'); // PEMBETULAN
                 return true;
             }
             
@@ -643,10 +639,10 @@
             tarikhMin.setDate(hariIni.getDate() + DAY_REQUIREMENT);
 
             if (tarikhDipilih < tarikhMin) {
-                elTarikhError.style.display = 'block';
+                elTarikhError.classList.remove('hidden'); // PEMBETULAN
                 return false;
             } else {
-                elTarikhError.style.display = 'none';
+                elTarikhError.classList.add('hidden'); // PEMBETULAN
                 return true;
             }
         }
@@ -673,7 +669,7 @@
         window.lookupSekolah = function() {
             if (!DATABASE_SEKOLAH) {
                  elLookupError.textContent = "Pangkalan data sekolah belum sedia. Sila tunggu...";
-                 elLookupError.style.display = 'block';
+                 elLookupError.classList.remove('hidden'); // PEMBETULAN
                  return;
             }
 
@@ -683,8 +679,8 @@
                 return;
             }
 
-            elLookupSpinner.style.display = 'block';
-            elLookupError.style.display = 'none';
+            elLookupSpinner.classList.remove('hidden'); // PEMBETULAN
+            elLookupError.classList.add('hidden'); // PEMBETULAN
             
             const data = DATABASE_SEKOLAH[kod];
             
@@ -696,10 +692,10 @@
                     elKategoriSekolah.value = data.kategori;
                 } else {
                     elLookupError.textContent = "Kod Sekolah tidak ditemui.";
-                    elLookupError.style.display = 'block';
+                    elLookupError.classList.remove('hidden'); // PEMBETULAN
                     clearSekolahFields();
                 }
-                elLookupSpinner.style.display = 'none';
+                elLookupSpinner.classList.add('hidden'); // PEMBETULAN
             }, 300); // 300ms delay
         }
 
@@ -862,11 +858,11 @@
         // Fungsi utiliti untuk mengawal status 'loading'
         function setLoading(isLoading) {
              if (isLoading) {
-                loadingSpinner.style.display = 'block';
+                loadingSpinner.classList.remove('hidden'); // PEMBETULAN
                 submitButton.disabled = true;
                 submitButton.classList.add('opacity-50');
              } else {
-                loadingSpinner.style.display = 'none';
+                loadingSpinner.classList.add('hidden'); // PEMBETULAN
                 submitButton.disabled = false;
                 submitButton.classList.remove('opacity-50');
              }
