@@ -6,34 +6,28 @@
   <title>Sistem Permohonan Lawatan JPNP</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Beberapa styling ringan */
-    .tab-active { background-color:#1D4ED8; color:white; }
     .hidden { display:none !important; }
-    .tab-button { cursor:pointer; }
-    .spinner { animation: spin 1s linear infinite; }
-    @keyframes spin {from {transform:rotate(0)} to {transform:rotate(360deg)}}
-    .table-scroll { overflow-x:auto; }
-    .btn { @apply px-4 py-2 rounded-md font-semibold; }
+    .tab-active { background-color:#1D4ED8; color:white; }
+    .spinner { animation:spin 1s linear infinite; }
+    @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
   </style>
 </head>
 <body class="bg-gray-100 font-sans">
-
   <div class="container mx-auto max-w-7xl p-5">
     <header class="bg-white shadow rounded-lg p-6 mb-5 text-center">
       <h1 class="text-3xl font-bold text-blue-800">Sistem Permohonan Lawatan Sambil Belajar</h1>
       <p class="text-lg text-gray-600">Jabatan Pendidikan Negeri Pahang</p>
     </header>
 
-    <!-- Tabs -->
     <div class="bg-white rounded-lg shadow-md mb-5">
       <nav class="flex">
-        <div id="tabBtnBorang" class="tab-button flex-1 p-4 text-center font-semibold border-r">Borang Permohonan</div>
-        <div id="tabBtnDashboard" class="tab-button flex-1 p-4 text-center font-semibold border-r">Dashboard JPN</div>
-        <div id="tabBtnKelulusan" class="tab-button flex-1 p-4 text-center font-semibold">Kelulusan Pengarah</div>
+        <button id="tabBtnBorang" class="tab-button flex-1 p-4 font-semibold tab-active">Borang Permohonan</button>
+        <button id="tabBtnDashboard" class="tab-button flex-1 p-4 font-semibold">Dashboard JPN</button>
+        <button id="tabBtnKelulusan" class="tab-button flex-1 p-4 font-semibold">Kelulusan Pengarah</button>
       </nav>
     </div>
 
-    <!-- CONTENT: BORANG -->
+    <!-- BORANG -->
     <div id="tabBorang" class="bg-white p-6 rounded-lg shadow-lg">
       <div id="dbStatus" class="mb-3 p-2 bg-blue-50 text-blue-700 rounded">STATUS: Memuatkan pangkalan data sekolah... Sila tunggu.</div>
 
@@ -55,7 +49,6 @@
         <input type="hidden" id="isQuery" value="false">
         <input type="hidden" id="currentId" value="">
 
-        <!-- Bahagian A -->
         <div class="border-b pb-4">
           <h2 class="font-semibold">Bahagian A: Maklumat Sekolah</h2>
           <div class="mt-3 grid grid-cols-1 sm:grid-cols-6 gap-4">
@@ -80,7 +73,6 @@
           </div>
         </div>
 
-        <!-- Bahagian B -->
         <div class="border-b pb-4">
           <h2 class="font-semibold">Bahagian B: Maklumat Lawatan</h2>
           <div class="mt-3 grid grid-cols-1 sm:grid-cols-6 gap-4">
@@ -117,34 +109,17 @@
           </div>
         </div>
 
-        <!-- Bahagian C Muat Naik -->
         <div class="border-b pb-4">
           <h2 class="font-semibold">Bahagian C: Muat Naik Dokumen</h2>
           <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label>Kertas Kerja (PDF)</label>
-              <input id="kertasKerja" type="file" accept=".pdf" />
-            </div>
-            <div>
-              <label>Maklumat Anggota (PDF)</label>
-              <input id="maklumatAnggota" type="file" accept=".pdf" />
-            </div>
-            <div>
-              <label>Lesen Bas</label>
-              <input id="lampiranLesenBas" type="file" accept=".pdf,image/*" />
-            </div>
-            <div>
-              <label>Lesen Pemandu</label>
-              <input id="lampiranLesenPemandu" type="file" accept=".pdf,image/*" />
-            </div>
-            <div>
-              <label>Intipati Taklimat</label>
-              <input id="lampiranTaklimat" type="file" accept=".pdf" />
-            </div>
+            <div><label>Kertas Kerja (PDF)</label><input id="kertasKerja" type="file" accept=".pdf" /></div>
+            <div><label>Maklumat Anggota (PDF)</label><input id="maklumatAnggota" type="file" accept=".pdf" /></div>
+            <div><label>Lesen Bas</label><input id="lampiranLesenBas" type="file" accept=".pdf,image/*" /></div>
+            <div><label>Lesen Pemandu</label><input id="lampiranLesenPemandu" type="file" accept=".pdf,image/*" /></div>
+            <div><label>Intipati Taklimat</label><input id="lampiranTaklimat" type="file" accept=".pdf" /></div>
           </div>
         </div>
 
-        <!-- Bahagian D Kewangan (ringkas) -->
         <div class="border-b pb-4">
           <h2 class="font-semibold">Bahagian D: Maklumat Kewangan</h2>
           <div class="mt-3 overflow-x-auto">
@@ -171,51 +146,40 @@
       <div id="alertError" class="mt-4 hidden p-4 bg-red-100 text-red-800 rounded"><span id="errorText"></span></div>
     </div>
 
-    <!-- CONTENT: DASHBOARD -->
+    <!-- DASHBOARD -->
     <div id="tabDashboard" class="bg-white p-6 rounded-lg shadow-lg hidden">
       <h2 class="text-xl font-semibold mb-3">Dashboard JPN</h2>
-      <p class="mb-3">Masukkan kata laluan untuk memuatkan data permohonan.</p>
       <div class="flex items-center gap-3 mb-6">
         <input id="dashboardPass" type="password" class="border p-2 rounded w-64" placeholder="Kata laluan" />
         <button id="loadDataBtn" class="px-4 py-2 bg-blue-600 text-white rounded">Muatkan Data</button>
       </div>
-
       <div id="dashboardArea" class="hidden">
-        <div class="table-scroll">
+        <div class="overflow-x-auto">
           <table id="dashboardTable" class="min-w-full border-collapse border">
-            <thead>
-              <tr class="bg-gray-50"><th class="p-3 border">Timestamp</th><th class="p-3 border">Email Rasmi Sekolah</th><th class="p-3 border">Kod Sekolah</th><th class="p-3 border">Nama Sekolah</th><th class="p-3 border">Status</th><th class="p-3 border">Tindakan</th></tr>
-            </thead>
+            <thead><tr class="bg-gray-50"><th class="p-3 border">Timestamp</th><th class="p-3 border">Email</th><th class="p-3 border">Kod</th><th class="p-3 border">Nama Sekolah</th><th class="p-3 border">Status</th><th class="p-3 border">Tindakan</th></tr></thead>
             <tbody id="dashboardTbody"></tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- CONTENT: KELULUSAN -->
+    <!-- KELULUSAN -->
     <div id="tabKelulusan" class="bg-white p-6 rounded-lg shadow-lg hidden">
       <h2 class="text-xl font-semibold">Kelulusan Pengarah</h2>
-      <p>Tab ini akan memaparkan permohonan yang telah disahkan oleh Pegawai JPN (status = Lulus JPN).</p>
       <div id="kelulusanArea"></div>
     </div>
 
   </div>
 
 <script>
-/* ===========================
-   CONFIG (tukar jika perlu)
-   =========================== */
+/* CONFIG - GANTIKAN jika anda deploy GAS ke URL lain */
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXfvUGbXGZ8X-8OVhGRI4Y8-HJaXUbStnkiSj_DvwnqCuyPAl9eQOgNoZn1iru85lE/exec";
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRZ4X7exDV-Bu9BSV0IjGswnQjpoYBgXBT-llAz2Iwr4z8fGWV0VX-DWzzYAEMmq-CWGqlXDayGYED/pub?gid=0&single=true&output=csv";
 const PASSWORD = "12345";
 const DAY_REQUIREMENT = 30;
 
-/* ===========================
-   STATE
-   =========================== */
-let DATABASE = null; // object key by code
 document.addEventListener('DOMContentLoaded', () => {
-  // tabs
+  // tab handlers
   const tabBorang = document.getElementById('tabBorang');
   const tabDashboard = document.getElementById('tabDashboard');
   const tabKelulusan = document.getElementById('tabKelulusan');
@@ -223,19 +187,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabBtnDashboard = document.getElementById('tabBtnDashboard');
   const tabBtnKelulusan = document.getElementById('tabBtnKelulusan');
 
-  function showTab(name) {
+  function showTab(name){
     [tabBorang, tabDashboard, tabKelulusan].forEach(t => t.classList.add('hidden'));
     [tabBtnBorang, tabBtnDashboard, tabBtnKelulusan].forEach(b => b.classList.remove('tab-active'));
-    if (name === 'borang') { tabBorang.classList.remove('hidden'); tabBtnBorang.classList.add('tab-active'); }
-    if (name === 'dashboard') { tabDashboard.classList.remove('hidden'); tabBtnDashboard.classList.add('tab-active'); }
-    if (name === 'kelulusan') { tabKelulusan.classList.remove('hidden'); tabBtnKelulusan.classList.add('tab-active'); }
+    if (name==='borang') { tabBorang.classList.remove('hidden'); tabBtnBorang.classList.add('tab-active'); }
+    if (name==='dashboard') { tabDashboard.classList.remove('hidden'); tabBtnDashboard.classList.add('tab-active'); }
+    if (name==='kelulusan') { tabKelulusan.classList.remove('hidden'); tabBtnKelulusan.classList.add('tab-active'); }
   }
-  tabBtnBorang.addEventListener('click', () => showTab('borang'));
-  tabBtnDashboard.addEventListener('click', () => showTab('dashboard'));
-  tabBtnKelulusan.addEventListener('click', () => showTab('kelulusan'));
+  tabBtnBorang.addEventListener('click', ()=>showTab('borang'));
+  tabBtnDashboard.addEventListener('click', ()=>showTab('dashboard'));
+  tabBtnKelulusan.addEventListener('click', ()=>showTab('kelulusan'));
   showTab('borang');
 
-  // form elements
+  // elements
   const dbStatus = document.getElementById('dbStatus');
   const modeBaru = document.getElementById('modeBaru');
   const modeQueryBtn = document.getElementById('modeQueryBtn');
@@ -265,188 +229,104 @@ document.addEventListener('DOMContentLoaded', () => {
   const kewIds = ['murid','guru'];
   const elKewJumlahBesar = document.getElementById('kew_jumlah_besar');
 
-  // dashboard
   const dashboardPass = document.getElementById('dashboardPass');
   const loadDataBtn = document.getElementById('loadDataBtn');
   const dashboardArea = document.getElementById('dashboardArea');
   const dashboardTbody = document.getElementById('dashboardTbody');
 
   // load CSV DB
-  async function loadCSV() {
+  let DATABASE = null;
+  async function loadCSV(){
     dbStatus.textContent = "STATUS: Memuatkan pangkalan data sekolah...";
     try {
       const r = await fetch(CSV_URL);
-      if (!r.ok) throw new Error('Gagal muatkan CSV: ' + r.status);
+      if (!r.ok) throw new Error('Gagal muatkan CSV: '+ r.status);
       const txt = await r.text();
-      // parse naive csv (as earlier)
-      const lines = txt.trim().split('\n').map(l => l.trim());
-      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,'').toUpperCase());
+      const lines = txt.trim().split('\n');
+      const headers = lines[0].split(',').map(h=>h.replace(/^"|"$/g,'').trim().toUpperCase());
       const idxKod = headers.indexOf('KOD_SEKOLAH') !== -1 ? headers.indexOf('KOD_SEKOLAH') : headers.indexOf('KOD SEKOLAH');
       const idxNama = headers.indexOf('NAMA_SEKOLAH') !== -1 ? headers.indexOf('NAMA_SEKOLAH') : headers.indexOf('NAMA SEKOLAH');
       const idxDaerah = headers.indexOf('DAERAH');
       const idxKategori = headers.indexOf('KATEGORI');
       const db = {};
       for (let i=1;i<lines.length;i++){
-        // handle quoted commas
         const row = parseCSVLine(lines[i]);
-        const code = (row[idxKod] || '').toString().trim().toUpperCase();
+        const code = (row[idxKod]||'').toString().trim().toUpperCase();
         if(!code) continue;
-        db[code] = {
-          kod: code,
-          nama: row[idxNama] || '',
-          daerah: row[idxDaerah] || '',
-          kategori: row[idxKategori] || ''
-        };
+        db[code] = { kod: code, nama: row[idxNama]||'', daerah: row[idxDaerah]||'', kategori: row[idxKategori]||'' };
       }
       DATABASE = db;
       dbStatus.textContent = `STATUS: Pangkalan data sekolah sedia (${Object.keys(db).length} rekod).`;
-      dbStatus.classList.remove('bg-red-100'); dbStatus.classList.add('bg-green-100');
       kodSekolah.disabled = false;
     } catch (err) {
-      console.error('loadCSV', err);
-      dbStatus.textContent = 'RALAT: Gagal muatkan CSV: ' + err.message;
-      dbStatus.classList.remove('bg-blue-50'); dbStatus.classList.add('bg-red-100');
+      dbStatus.textContent = 'RALAT: ' + err.message; dbStatus.classList.add('text-red-700');
     }
   }
+  function parseCSVLine(line){ const out=[]; let cur='', inQ=false; for(let i=0;i<line.length;i++){ const ch=line[i]; if(ch==='"'){ inQ=!inQ; continue;} if(ch===',' && !inQ){ out.push(cur); cur=''; continue;} cur+=ch;} out.push(cur); return out.map(s=>s.replace(/^"|"$/g,'').trim()); }
 
-  function parseCSVLine(line) {
-    // simple CSV parser supporting quoted fields with commas
-    const out = [];
-    let cur = ''; let inQuote = false;
-    for (let i=0;i<line.length;i++){
-      const ch = line[i];
-      if (ch === '"' ) { inQuote = !inQuote; continue; }
-      if (ch === ',' && !inQuote) { out.push(cur); cur=''; continue; }
-      cur += ch;
-    }
-    out.push(cur);
-    return out.map(s => s.replace(/\r/g,'').replace(/^ +| +$/g,'').replace(/^"|"$/g,''));
-  }
-
-  // lookup sekolah
-  kodSekolah.addEventListener('blur', () => {
-    const k = kodSekolah.value.trim().toUpperCase();
-    if(!k || !DATABASE) return;
-    lookupSpinner.classList.remove('hidden');
-    lookupError.classList.add('hidden');
-    setTimeout(() => {
-      const rec = DATABASE[k];
-      if (!rec) {
-        lookupError.textContent = 'Kod Sekolah tidak ditemui.'; lookupError.classList.remove('hidden');
-        namaSekolah.value=''; daerahSekolah.value=''; kategoriSekolah.value='';
-      } else {
-        namaSekolah.value = rec.nama || '';
-        daerahSekolah.value = rec.daerah || '';
-        kategoriSekolah.value = rec.kategori || '';
-      }
-      lookupSpinner.classList.add('hidden');
-    }, 200);
+  kodSekolah.addEventListener('blur', ()=>{
+    const k = kodSekolah.value.trim().toUpperCase(); if(!k || !DATABASE) return;
+    lookupSpinner.classList.remove('hidden'); lookupError.classList.add('hidden');
+    setTimeout(()=>{ const rec = DATABASE[k]; if(!rec){ lookupError.textContent='Kod Sekolah tidak ditemui'; lookupError.classList.remove('hidden'); namaSekolah.value=''; daerahSekolah.value=''; kategoriSekolah.value=''; } else { namaSekolah.value = rec.nama; daerahSekolah.value = rec.daerah; kategoriSekolah.value = rec.kategori; } lookupSpinner.classList.add('hidden'); }, 200);
   });
 
-  // mode toggle
-  modeBaru.addEventListener('click', () => {
-    isQuery.value='false';
-    queryBox.classList.add('hidden');
-    mainForm.reset();
-    currentId.value='';
-    ['kertasKerja','maklumatAnggota','lampiranLesenBas','lampiranLesenPemandu','lampiranTaklimat'].forEach(id => { const el=document.getElementById(id); if(el) el.required=true; });
-  });
-  modeQueryBtn.addEventListener('click', () => {
-    isQuery.value='true';
-    queryBox.classList.remove('hidden');
-    ['kertasKerja','maklumatAnggota','lampiranLesenBas','lampiranLesenPemandu','lampiranTaklimat'].forEach(id => { const el=document.getElementById(id); if(el) el.required=false; });
-  });
+  // mode
+  modeBaru.addEventListener('click', ()=>{ isQuery.value='false'; queryBox.classList.add('hidden'); mainForm.reset(); currentId.value=''; ['kertasKerja','maklumatAnggota','lampiranLesenBas','lampiranLesenPemandu','lampiranTaklimat'].forEach(id=>{ const el=document.getElementById(id); if(el) el.required=true; }); });
+  modeQueryBtn.addEventListener('click', ()=>{ isQuery.value='true'; queryBox.classList.remove('hidden'); ['kertasKerja','maklumatAnggota','lampiranLesenBas','lampiranLesenPemandu','lampiranTaklimat'].forEach(id=>{ const el=document.getElementById(id); if(el) el.required=false; }); });
 
-  // kira kewangan
-  function kiraJumlah() {
-    let total=0;
-    kewIds.forEach(id => {
-      const bil = parseFloat(document.getElementById(`kew_${id}_bil`).value) || 0;
-      const kutipan = parseFloat(document.getElementById(`kew_${id}_kutipan`).value) || 0;
-      const jumlah = bil*kutipan;
-      document.getElementById(`kew_${id}_jumlah`).value = jumlah.toFixed(2);
-      total += jumlah;
-    });
-    elKewJumlahBesar.value = total.toFixed(2);
-  }
-  kewIds.forEach(id => {
-    const a = document.getElementById(`kew_${id}_bil`);
-    const b = document.getElementById(`kew_${id}_kutipan`);
-    if(a) a.addEventListener('input', kiraJumlah);
-    if(b) b.addEventListener('input', kiraJumlah);
-  });
+  // kewangan calc
+  function kiraJumlah(){ let total=0; kewIds.forEach(id=>{ const bil = parseFloat(document.getElementById(`kew_${id}_bil`).value)||0; const kut = parseFloat(document.getElementById(`kew_${id}_kutipan`).value)||0; const j = bil*kut; document.getElementById(`kew_${id}_jumlah`).value = j.toFixed(2); total+=j; }); elKewJumlahBesar.value = total.toFixed(2); }
+  kewIds.forEach(id=>{ const a=document.getElementById(`kew_${id}_bil`); const b=document.getElementById(`kew_${id}_kutipan`); if(a) a.addEventListener('input', kiraJumlah); if(b) b.addEventListener('input', kiraJumlah); });
 
   // query load
-  btnQueryLoad.addEventListener('click', async () => {
-    queryError.classList.add('hidden');
-    const id = queryId.value.trim(); const email = queryEmail.value.trim();
-    if(!id || !email) { queryError.textContent='Sila isi ID dan Email'; queryError.classList.remove('hidden'); return; }
+  btnQueryLoad.addEventListener('click', async ()=>{
+    queryError.classList.add('hidden'); const id = queryId.value.trim(); const email = queryEmail.value.trim();
+    if(!id || !email) { queryError.textContent='Sila isi ID & Email'; queryError.classList.remove('hidden'); return; }
     try {
       const resp = await fetch(`${SCRIPT_URL}?action=getPermohonanForEdit&id=${encodeURIComponent(id)}&email=${encodeURIComponent(email)}`);
-      const data = await resp.json();
-      if (data.status !== 'success') { throw new Error(data.message || 'Tidak berjaya'); }
-      prefillForm(data.data);
+      const j = await resp.json();
+      if (j.status !== 'success') throw new Error(j.message || 'Tidak dijumpai');
+      prefillForm(j.data);
       queryBox.classList.add('hidden');
-    } catch (err) {
-      queryError.textContent = 'Ralat: ' + err.message; queryError.classList.remove('hidden');
-    }
+    } catch (e) { queryError.textContent = 'Ralat: ' + e.message; queryError.classList.remove('hidden'); }
   });
 
-  function prefillForm(d) {
-    // Papar medan daripada d (mapping bergantung pada header di Sheet)
+  function prefillForm(d){
     try {
-      document.getElementById('emailSekolah').value = d['Email'] || d['Email Rasmi Sekolah'] || '';
-      document.getElementById('kodSekolah').value = d['KodSekolah'] || d['Kod Sekolah'] || '';
-      document.getElementById('namaSekolah').value = d['NamaSekolah'] || d['Nama Sekolah'] || '';
+      document.getElementById('emailSekolah').value = d['Email Rasmi Sekolah'] || d['Email'] || '';
+      document.getElementById('kodSekolah').value = d['Kod Sekolah'] || d['KodSekolah'] || '';
+      document.getElementById('namaSekolah').value = d['Nama Sekolah'] || d['NamaSekolah'] || '';
       document.getElementById('daerahSekolah').value = d['Daerah'] || '';
       document.getElementById('kategoriSekolah').value = d['Kategori'] || '';
       if (d['Tarikh Mula'] || d['TarikhMula']) document.getElementById('tarikhMula').value = formatDateForInput(d['Tarikh Mula'] || d['TarikhMula']);
       if (d['Tarikh Akhir'] || d['TarikhAkhir']) document.getElementById('tarikhAkhir').value = formatDateForInput(d['Tarikh Akhir'] || d['TarikhAkhir']);
-      document.getElementById('namaKetuaRombongan').value = d['Nama Ketua Rombongan'] || d['NamaKetuaRombongan'] || '';
-      document.getElementById('noTelKetuaRombongan').value = d['No Tel Ketua Rombongan'] || d['NoTelKetuaRombongan'] || '';
+      document.getElementById('namaKetuaRombongan').value = d['Nama Ketua Rombongan'] || '';
+      document.getElementById('noTelKetuaRombongan').value = d['No Tel Ketua Rombongan'] || '';
       document.getElementById('tempatLawatan').value = d['Tempat Lawatan'] || '';
       document.getElementById('alamatPenginapan').value = d['Alamat Penginapan'] || '';
-      // kewangan jika wujud
-      if (d['Kewangan_Murid_Bil']) { document.getElementById('kew_murid_bil').value = d['Kewangan_Murid_Bil']; }
-      // set current id
-      currentId.value = d['IDPermohonan'] || d['ID Permohonan'] || '';
-    } catch (e) { console.warn('prefill err', e); }
+      if (d['Kewangan_Murid_Bil']) document.getElementById('kew_murid_bil').value = d['Kewangan_Murid_Bil'];
+      currentId.value = d['ID Permohonan'] || d['IDPermohonan'] || '';
+    } catch (e){ console.warn(e); }
     kiraJumlah();
   }
-  function formatDateForInput(v) {
-    if (!v) return '';
-    const dt = new Date(v);
-    if (isNaN(dt)) return v;
-    return dt.toISOString().split('T')[0];
-  }
+  function formatDateForInput(v){ if(!v) return ''; const dt=new Date(v); if(isNaN(dt)) return v; return dt.toISOString().split('T')[0]; }
 
-  // validate tarikh
-  document.getElementById('tarikhMula').addEventListener('change', () => {
-    if (isQuery.value === 'true') { document.getElementById('tarikhError').classList.add('hidden'); return true; }
-    const chosen = new Date(document.getElementById('tarikhMula').value);
-    const now = new Date(); now.setHours(0,0,0,0);
-    const min = new Date(now); min.setDate(min.getDate() + DAY_REQUIREMENT);
-    if (chosen < min) { document.getElementById('tarikhError').classList.remove('hidden'); return false; }
-    document.getElementById('tarikhError').classList.add('hidden'); return true;
+  // tarikh validation
+  document.getElementById('tarikhMula').addEventListener('change', ()=>{
+    if (isQuery.value === 'true') { document.getElementById('tarikhError').classList.add('hidden'); return; }
+    const chosen = new Date(document.getElementById('tarikhMula').value); const now=new Date(); now.setHours(0,0,0,0); const min=new Date(now); min.setDate(min.getDate()+DAY_REQUIREMENT);
+    if (chosen < min) { document.getElementById('tarikhError').classList.remove('hidden'); } else { document.getElementById('tarikhError').classList.add('hidden'); }
   });
 
   // submit form
-  mainForm.addEventListener('submit', async (ev) => {
-    ev.preventDefault();
-    alertError.classList.add('hidden');
-    alertSuccess.classList.add('hidden');
-
-    // simple validations
-    if (!namaSekolah.value) { showError('Sila masukkan Kod Sekolah yang sah.'); return; }
-    if (!document.getElementById('tarikhMula').value) { showError('Sila tetapkan tarikh mula.'); return; }
-    if (!document.getElementById('emailSekolah').value) { showError('Sila masukkan email rasmi sekolah.'); return; }
-
+  mainForm.addEventListener('submit', async (ev)=>{
+    ev.preventDefault(); alertError.classList.add('hidden'); alertSuccess.classList.add('hidden');
+    if (!document.getElementById('namaSekolah').value) { showError('Sila masukkan Kod Sekolah yang sah.'); return; }
+    if (!document.getElementById('tarikhMula').value) { showError('Sila pilih tarikh mula.'); return; }
     if (!validateTarikh()) return;
-
     setSending(true);
-
     try {
-      // collect files - read as base64
+      // read files
       const filesToRead = [
         { el: 'kertasKerja', name:'kertasKerja' },
         { el: 'maklumatAnggota', name:'maklumatAnggota' },
@@ -454,24 +334,21 @@ document.addEventListener('DOMContentLoaded', () => {
         { el: 'lampiranLesenPemandu', name:'lampiranLesenPemandu' },
         { el: 'lampiranTaklimat', name:'lampiranTaklimat' }
       ];
-      const filePromises = filesToRead.map(f => {
+      const filePromises = filesToRead.map(f=>{
         const inp = document.getElementById(f.el);
-        if (inp && inp.files && inp.files[0]) {
-          return readFileAsBase64(inp.files[0]).then(base64 => ({ name: f.name, filename: inp.files[0].name, mimeType: inp.files[0].type, data: base64.split(',')[1] }));
-        } else return Promise.resolve(null);
+        if (inp && inp.files && inp.files[0]) return readFileAsBase64(inp.files[0]).then(b=>({ name: f.name, filename: inp.files[0].name, mimeType: inp.files[0].type, data: b.split(',')[1] }));
+        return Promise.resolve(null);
       });
-      const filesArr = (await Promise.all(filePromises)).filter(x => x);
-      const filesObj = {};
-      filesArr.forEach(f => filesObj[f.name]=f);
+      const filesArr = (await Promise.all(filePromises)).filter(x=>x);
+      const filesObj = {}; filesArr.forEach(f=>filesObj[f.name]=f);
 
-      // kewangan collect
       const kew = {
         'Kewangan_Murid_Bil': document.getElementById('kew_murid_bil').value || 0,
         'Kewangan_Murid_Kutipan': document.getElementById('kew_murid_kutipan').value || 0,
         'Kewangan_Murid_Jumlah': document.getElementById('kew_murid_jumlah').value || 0,
-        'Kewangan_Guru_Bil': document.getElementById('kew_guru_bil').value || 0,
-        'Kewangan_Guru_Kutipan': document.getElementById('kew_guru_kutipan').value || 0,
-        'Kewangan_Guru_Jumlah': document.getElementById('kew_guru_jumlah').value || 0,
+        'Kewangan_Guru_Bil': document.getElementById('kew_guru_bil') ? document.getElementById('kew_guru_bil').value || 0 : 0,
+        'Kewangan_Guru_Kutipan': document.getElementById('kew_guru_kutipan') ? document.getElementById('kew_guru_kutipan').value || 0 : 0,
+        'Kewangan_Guru_Jumlah': document.getElementById('kew_guru_jumlah') ? document.getElementById('kew_guru_jumlah').value || 0 : 0,
         'Kewangan_Jumlah_Besar': document.getElementById('kew_jumlah_besar').value || 0
       };
 
@@ -493,151 +370,83 @@ document.addEventListener('DOMContentLoaded', () => {
         kewangan: kew
       };
 
-      // Send as text/plain to avoid preflight CORS
       const resp = await fetch(SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain' }, body: JSON.stringify(payload) });
-      const data = await resp.json();
-      if (data.status !== 'success') throw new Error(data.message || 'Ralat dari server');
-      // success
-      successId.textContent = data.idPermohonan || currentId.value || 'JPNP-UNKNOWN';
+      const j = await resp.json();
+      if (j.status !== 'success') throw new Error(j.message || 'Ralat server');
+      successId.textContent = j.idPermohonan || currentId.value || '';
       alertSuccess.classList.remove('hidden');
-      // show pop-up notification for 5s then reset
-      setTimeout(() => { mainForm.reset(); currentId.value=''; alertSuccess.classList.add('hidden'); }, 5000);
-      // send notification to JPN handled by GAS
-      // scroll
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) {
-      showError('Gagal muat naik: ' + (err.message || err));
-    } finally {
-      setSending(false);
-    }
+      setTimeout(()=>{ mainForm.reset(); currentId.value=''; alertSuccess.classList.add('hidden'); }, 5000);
+      window.scrollTo({ top:0, behavior:'smooth' });
+    } catch (e) { showError('Gagal hantar: ' + (e.message||e)) } finally { setSending(false); }
   });
 
-  function validateTarikh(){
-    if (isQuery.value === 'true') { document.getElementById('tarikhError').classList.add('hidden'); return true; }
-    const tarikh = document.getElementById('tarikhMula').value;
-    if (!tarikh) { showError('Sila pilih tarikh mula'); return false; }
-    const t = new Date(tarikh); const now = new Date(); now.setHours(0,0,0,0); const min = new Date(now); min.setDate(min.getDate() + DAY_REQUIREMENT);
-    if (t < min) { document.getElementById('tarikhError').classList.remove('hidden'); return false; }
-    document.getElementById('tarikhError').classList.add('hidden'); return true;
-  }
+  function validateTarikh(){ if (isQuery.value==='true') return true; const t=document.getElementById('tarikhMula').value; if(!t){ showError('Sila pilih tarikh'); return false;} const d=new Date(t); const now=new Date(); now.setHours(0,0,0,0); const min=new Date(now); min.setDate(min.getDate()+DAY_REQUIREMENT); if(d < min){ document.getElementById('tarikhError').classList.remove('hidden'); return false; } document.getElementById('tarikhError').classList.add('hidden'); return true; }
 
-  function showError(msg) {
-    errorText.textContent = msg;
-    alertError.classList.remove('hidden');
-    alertSuccess.classList.add('hidden');
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-  }
+  function showError(msg){ errorText.textContent = msg; alertError.classList.remove('hidden'); alertSuccess.classList.add('hidden'); window.scrollTo({ top: document.body.scrollHeight, behavior:'smooth' }); }
+  function setSending(flag){ if(flag){ loadingSend.classList.remove('hidden'); submitBtn.disabled=true; } else { loadingSend.classList.add('hidden'); submitBtn.disabled=false; } }
+  function readFileAsBase64(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=e=>rej(e); r.readAsDataURL(file); }); }
 
-  function setSending(flag) {
-    if (flag) { loadingSend.classList.remove('hidden'); submitBtn.disabled=true; submitBtn.classList.add('opacity-50'); }
-    else { loadingSend.classList.add('hidden'); submitBtn.disabled=false; submitBtn.classList.remove('opacity-50'); }
-  }
-
-  function readFileAsBase64(file){
-    return new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload = () => res(r.result);
-      r.onerror = e => rej(e);
-      r.readAsDataURL(file);
-    });
-  }
-
-  // DASHBOARD actions
-  loadDataBtn.addEventListener('click', async () => {
-    const pass = dashboardPass.value;
-    if (pass !== PASSWORD) { alert('Kata laluan salah'); return; }
-    // panggil API get all data (we expect GAS to support action=getData with token, if not present we will fallback to using published sheet CSV of Data tab)
+  // Dashboard: load data
+  loadDataBtn.addEventListener('click', async ()=>{
+    const pass = dashboardPass.value; if(pass !== PASSWORD){ alert('Kata laluan salah'); return; }
     try {
-      // Try webapp getData with token (if GAS implements it)
       const u = `${SCRIPT_URL}?action=getData&token=${encodeURIComponent(PASSWORD)}`;
       const r = await fetch(u);
       const j = await r.json();
-      if (j.status === 'success' && Array.isArray(j.data)) {
-        populateDashboard(j.data);
-      } else {
-        // fallback: try published CSV of Data sheet (user may need to publish)
-        // NOTE: you should publish your 'Data' sheet to csv and set CSV_DATA_URL accordingly in config if needed.
-        alert('Tidak jumpa getData. Sila deploy GAS Fasa 2 (dashboard) atau gunakan sheet CSV fallback.');
-      }
-    } catch (err) {
-      console.error('load data err', err);
-      alert('Ralat memuat data: ' + err.message);
-    }
+      if (j.status === 'success' && Array.isArray(j.data)) populateDashboard(j.data); else alert('Gagal muat data: ' + (j.message||''));
+    } catch (e){ alert('Ralat: ' + e.message); }
   });
 
-  function populateDashboard(rows) {
+  function populateDashboard(rows){
     dashboardTbody.innerHTML = '';
-    rows.forEach(row => {
-      // row expected to be object with keys that match sheet headers
+    rows.forEach(row=>{
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="border px-3 py-2">${row.Timestamp || row.Timestamp_ || ''}</td>
-        <td class="border px-3 py-2">${row.Email || row['Email Rasmi Sekolah'] || ''}</td>
-        <td class="border px-3 py-2">${row.KodSekolah || row['Kod Sekolah'] || ''}</td>
-        <td class="border px-3 py-2">${row.NamaSekolah || row['Nama Sekolah'] || ''}</td>
-        <td class="border px-3 py-2">${row.Status || ''}</td>
-        <td class="border px-3 py-2" id="td-${row.IDPermohonan || row['ID Permohonan'] || ''}"></td>
-      `;
+      tr.innerHTML = `<td class="border px-3 py-2">${row.Timestamp||''}</td><td class="border px-3 py-2">${row['Email Rasmi Sekolah']||row.Email||''}</td><td class="border px-3 py-2">${row['Kod Sekolah']||''}</td><td class="border px-3 py-2">${row['Nama Sekolah']||''}</td><td class="border px-3 py-2">${row['Status Permohonan']||row['Status']||''}</td><td class="border px-3 py-2" id="td-${row['ID Permohonan']||''}"></td>`;
       dashboardTbody.appendChild(tr);
-
-      // add action buttons to last td
       const td = tr.querySelector('td:last-child');
-      const idVal = row.IDPermohonan || row['ID Permohonan'] || '';
+      const idVal = row['ID Permohonan'] || row.IDPermohonan || '';
       const viewBtn = document.createElement('button'); viewBtn.className='px-3 py-1 mr-2 border rounded'; viewBtn.textContent='Lihat';
-      viewBtn.addEventListener('click', () => {
-        // open Google Sheet row PDF links if available (we rely on GAS to store file links)
-        // show modal? simple open in new tab: assume LinkKertasKerja column exists
-        const url = row.LinkKertasKerja || row['LinkKertasKerja'] || row['Link Kertas Kerja'] || '';
-        if (url) window.open(url, '_blank');
-        else alert('Tiada pautan fail tersedia untuk permohonan ini.');
-      });
+      viewBtn.addEventListener('click', ()=>{ const url = row['Link Kertas Kerja'] || row['LinkKertasKerja'] || ''; if(url) window.open(url,'_blank'); else alert('Tiada pautan fail'); });
       const queryBtn = document.createElement('button'); queryBtn.className='px-3 py-1 mr-2 bg-yellow-400 rounded'; queryBtn.textContent='Query';
-      queryBtn.addEventListener('click', () => handleQuery(row));
+      queryBtn.addEventListener('click', ()=>handleQuery(row));
       const approveBtn = document.createElement('button'); approveBtn.className='px-3 py-1 bg-green-600 text-white rounded'; approveBtn.textContent='Lulus JPN';
-      approveBtn.addEventListener('click', () => handleApprove(row));
+      approveBtn.addEventListener('click', ()=>handleApprove(row));
       td.appendChild(viewBtn); td.appendChild(queryBtn); td.appendChild(approveBtn);
     });
     dashboardArea.classList.remove('hidden');
   }
 
-  async function handleQuery(row) {
-    const notes = prompt('Sila masukkan sebab Query untuk sekolah:');
-    if (!notes) return;
-    // call GAS endpoint updateStatus?action=updateStatus with token
+  async function handleQuery(row){
+    const notes = prompt('Sila masukkan sebab Query:'); if(!notes) return;
     try {
-      const payload = { action: 'updateStatus', token: PASSWORD, idPermohonan: row.IDPermohonan || row['ID Permohonan'], status: 'Query', catatan: notes };
-      const resp = await fetch(SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain' }, body: JSON.stringify(payload) });
-      const j = await resp.json();
-      if (j.status === 'success') {
-        alert('Query dihantar dan sekolah dimaklumkan.');
-        loadDataBtn.click();
-      } else alert('Gagal send query: ' + (j.message || JSON.stringify(j)));
-    } catch (e) { alert('Ralat: ' + e.message); }
+      const payload = { action:'updateStatus', token:PASSWORD, idPermohonan: row['ID Permohonan']||row.IDPermohonan, status:'Query', catatan: notes };
+      const r = await fetch(SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
+      const j = await r.json();
+      if (j.status === 'success') { alert('Query dihantar'); loadDataBtn.click(); } else alert('Gagal: ' + (j.message||JSON.stringify(j)));
+    } catch (e){ alert('Ralat: ' + e.message); }
   }
 
-  async function handleApprove(row) {
-    if (!confirm('Sahkan lulus permohonan ini?')) return;
+  async function handleApprove(row){
+    if (!confirm('Sahkan lulus?')) return;
     try {
-      const payload = { action: 'updateStatus', token: PASSWORD, idPermohonan: row.IDPermohonan || row['ID Permohonan'], status: 'Lulus JPN' };
-      const resp = await fetch(SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain' }, body: JSON.stringify(payload) });
-      const j = await resp.json();
+      const payload = { action:'updateStatus', token:PASSWORD, idPermohonan: row['ID Permohonan']||row.IDPermohonan, status:'Lulus JPN' };
+      const r = await fetch(SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
+      const j = await r.json();
       if (j.status === 'success') {
-        // optionally call janaSurat
-        if (confirm('Jana surat kelulusan sekarang?')) {
-          const payload2 = { action: 'janaSurat', token: PASSWORD, idPermohonan: row.IDPermohonan || row['ID Permohonan'] };
-          const r2 = await fetch(SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain' }, body: JSON.stringify(payload2) });
+        if (confirm('Jana surat sekarang?')) {
+          const payload2 = { action:'janaSurat', token:PASSWORD, idPermohonan: row['ID Permohonan']||row.IDPermohonan };
+          const r2 = await fetch(SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload2) });
           const j2 = await r2.json();
-          if (j2.status === 'success') alert('Surat dijana dan dihantar.');
+          if (j2.status === 'success') alert('Surat dijana.'); else alert('Gagal jana surat: '+ (j2.message||''));
         }
         loadDataBtn.click();
-      } else alert('Gagal lulus: ' + (j.message || JSON.stringify(j)));
-    } catch (e) { alert('Ralat: ' + e.message); }
+      } else alert('Gagal lulus: ' + (j.message||''));
+    } catch (e){ alert('Ralat: ' + e.message); }
   }
 
-  // initial
+  // initial load CSV
   loadCSV();
-}); // DOMContentLoaded
+});
 </script>
-
 </body>
 </html>
