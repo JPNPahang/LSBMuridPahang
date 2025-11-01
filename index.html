@@ -392,7 +392,7 @@ async function loadSchoolDB(){
     const idxNama = headers.indexOf('NAMA_SEKOLAH');
     const idxDaerah = headers.indexOf('DAERAH');
     const idxKategori = headers.indexOf('KATEGORI');
-D   const db = {};
+   const db = {};
     for (let i=1;i<lines.length;i++){
       const vals = parseCsvLine(lines[i]);
       const kod = (vals[idxKod] || "").toString().trim().toUpperCase();
