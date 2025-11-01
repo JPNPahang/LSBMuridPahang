@@ -87,7 +87,7 @@
         <!-- =================================================================== -->
         <!-- FOKUS KITA: Konten Tab 1: Borang Permohonan Kustom -->
         <!-- =================================================================== -->
-        <div id="content-borang" class="tab-content bg-white p-8 rounded-lg shadow-lg"> <!-- PEMBETULAN: 'style="display: block;"' dibuang, serahkan pada JS -->
+        <div id="content-borang" class="tab-content bg-white p-8 rounded-lg shadow-lg hidden"> <!-- D Kawal oleh JS -->
 
             <!-- Status Pangkalan Data Sekolah -->
             <div id="dbStatus" class="mb-4 p-3 bg-blue-100 text-blue-800 rounded-md text-sm">
@@ -119,7 +119,7 @@
                         Cari Permohonan
                     </button>
                 </div>
-                 <p id="queryLookupError" class="text-red-600 text-sm mt-2 hidden"></p> <!-- PEMBETULAN: guna kelas hidden -->
+                 <p id="queryLookupError" class="text-red-600 text-sm mt-2 hidden"></p>
             </div>
 
 
@@ -139,12 +139,12 @@
                             <label for="kodSekolah" class="block text-sm font-medium leading-6 text-gray-900">Kod Sekolah</label>
                             <div class="relative">
                                 <input type="text" name="kodSekolah" id="kodSekolah" required class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" disabled> <!-- 'disabled' sehingga DB sedia -->
-                                <svg id="lookupSpinner" class="spinning h-5 w-5 text-blue-600 absolute top-4 right-3" style="display: none;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <svg id="lookupSpinner" class="spinning h-5 w-5 text-blue-600 absolute top-4 right-3 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
                             </div>
-                            <p id="lookupError" class="text-red-600 text-xs mt-1 hidden"></p> <!-- PEMBETULAN: guna kelas hidden -->
+                            <p id="lookupError" class="text-red-600 text-xs mt-1 hidden"></p>
                         </div>
                         <div class="sm:col-span-4">
                             <label for="namaSekolah" class="block text-sm font-medium leading-6 text-gray-900">Nama Sekolah</label>
@@ -172,7 +172,7 @@
                         <div class="sm:col-span-3">
                             <label for="tarikhMula" class="block text-sm font-medium leading-6 text-gray-900">Tarikh Mula Lawatan</label>
                             <input type="date" name="tarikhMula" id="tarikhMula" required class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
-                            <p id="tarikhError" class="text-red-600 text-xs mt-1 hidden"></p> <!-- PEMBETULAN: guna kelas hidden -->
+                            <p id="tarikhError" class="text-red-600 text-xs mt-1 hidden"></p>
                         </div>
                         <div class="sm:col-span-3">
                             <label for="tarikhAkhir" class="block text-sm font-medium leading-6 text-gray-900">Tarikh Akhir Lawatan</label>
@@ -311,7 +311,7 @@
                     <button type="submit" id="submitButton" class="rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
                         Hantar Permohonan
                     </button>
-                    <div id="loading" class="text-blue-600 font-medium hidden">Menghantar...</div> <!-- PEMBETULAN: guna kelas hidden -->
+                    <div id="loading" class="text-blue-600 font-medium hidden">Menghantar...</div>
                 </div>
             </form>
             
@@ -329,9 +329,9 @@
         <!-- =================================================================== -->
         <!-- TAB DI BAWAH INI DISOROKKAN BUAT MASA SEKARANG -->
         <!-- =================================================================== -->
-        <div id="password-gate" class="tab-content bg-white p-8 rounded-lg shadow-lg hidden"></div> <!-- PEMBETULAN: guna kelas hidden -->
-        <div id="content-dashboard" class="tab-content bg-white p-8 rounded-lg shadow-lg hidden"></div> <!-- PEMBETULAN: guna kelas hidden -->
-        <div id="content-kelulusan" class="tab-content bg-white p-8 rounded-lg shadow-lg hidden"></div> <!-- PEMBETULAN: guna kelas hidden -->
+        <div id="password-gate" class="tab-content bg-white p-8 rounded-lg shadow-lg hidden"></div>
+        <div id="content-dashboard" class="tab-content bg-white p-8 rounded-lg shadow-lg hidden"></div>
+        <div id="content-kelulusan" class="tab-content bg-white p-8 rounded-lg shadow-lg hidden"></div>
     </div>
 
     <script>
@@ -349,14 +349,18 @@
     let DATABASE_SEKOLAH = null; // Akan diisi oleh CSV
     const DAY_REQUIREMENT = 30; // Syarat 30 hari
 
-    // PEMBETULAN: Membungkus semua kod dalam 'DOMContentLoaded'
+    // PEMBETULAN v7.2: Membungkus semua kod dalam 'DOMContentLoaded'
     // Ini memastikan semua elemen HTML (seperti 'lookupSpinner') wujud sebelum skrip cuba menggunakannya.
     document.addEventListener('DOMContentLoaded', () => {
 
         // Elemen DOM Borang Utama
         const elBorangLawatan = document.getElementById('borangLawatan');
         const loadingSpinner = document.getElementById('loading');
-// ... existing code ... -->
+        const submitButton = document.getElementById('submitButton');
+        const borangSuccess = document.getElementById('borangSuccess');
+        const borangError = document.getElementById('borangError');
+        const successId = document.getElementById('successId');
+        const errorText = document.getElementById('errorText');
         const elTarikhMula = document.getElementById('tarikhMula');
         const elTarikhError = document.getElementById('tarikhError');
         
@@ -410,7 +414,14 @@
 
         /**
          * Memuatkan Pangkalan Data Sekolah dari CSV yang diterbitkan.
+         * PEMBETULAN v7.4: Menambah 'parseCsvHeaders' untuk kebersihan data.
          */
+        function parseCsvHeaders(line) {
+            // remove BOM
+            if (line.charCodeAt(0) === 0xFEFF) line = line.slice(1);
+            return line.split(',').map(h => h.trim().toUpperCase().replace(/"/g, ''));
+        }
+        
         async function loadSchoolDatabase() {
             if (CSV_URL === "URL_CSV_ANDA_DARI_GOOGLE_SHEET") {
                 elDbStatus.innerHTML = `<span class="font-semibold">RALAT KONFIGURASI:</span> Sila kemas kini ` + '`const CSV_URL`' + ` di dalam 'index.html'.`;
@@ -428,7 +439,7 @@
                 
                 // Proses CSV
                 const lines = csvData.trim().split('\n');
-                const headers = lines[0].trim().split(','); // KOD_SEKOLAH,DAERAH,KATEGORI,NAMA_SEKOLAH
+                const headers = parseCsvHeaders(lines[0]); // PEMBETULAN v7.4
 
                 // Cari indeks untuk setiap lajur
                 const idxKod = headers.indexOf("KOD_SEKOLAH");
@@ -436,19 +447,19 @@
                 const idxKategori = headers.indexOf("KATEGORI");
                 const idxNama = headers.indexOf("NAMA_SEKOLAH");
                 
-                if (idxKod === -1 || idxNama === -1) {
-                     throw new Error("Format CSV tidak sah. Pastikan header KOD_SEKOLAH dan NAMA_SEKOLAH wujud.");
+                if (idxKod === -1 || idxNama === -1 || idxDaerah === -1 || idxKategori === -1) {
+                     throw new Error(`Format CSV tidak sah. Header tidak dijumpai: KOD_SEKOLAH=${idxKod}, NAMA_SEKOLAH=${idxNama}, DAERAH=${idxDaerah}, KATEGORI=${idxKategori}`);
                 }
 
                 const db = {};
                 for (let i = 1; i < lines.length; i++) {
                     const values = lines[i].trim().split(',');
-                    const kod = values[idxKod].trim();
+                    const kod = values[idxKod].trim().replace(/"/g, '');
                     if (kod) {
-                         db[kod.toUpperCase()] = { // Simpan kod sebagai UPPERCASE untuk carian mudah
-                            nama: values[idxNama].trim(),
-                            daerah: values[idxDaerah] ? values[idxDaerah].trim() : '',
-                            kategori: values[idxKategori] ? values[idxKategori].trim() : ''
+                        db[kod.toUpperCase()] = { // Simpan kod sebagai UPPERCASE untuk carian mudah
+                            nama: values[idxNama].trim().replace(/"/g, ''),
+                            daerah: values[idxDaerah] ? values[idxDaerah].trim().replace(/"/g, '') : '',
+                            kategori: values[idxKategori] ? values[idxKategori].trim().replace(/"/g, '') : ''
                         };
                     }
                 }
@@ -472,7 +483,7 @@
         // Fungsi Navigasi Tab
         window.showTab = function(tabName) { // Letak di 'window' supaya 'onclick' HTML boleh capai
             document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.add('hidden'); // PEMBETULAN
+                content.classList.add('hidden'); // Sembunyikan semua
             });
             document.querySelectorAll('.tab-button').forEach(button => {
                 button.classList.remove('tab-active');
@@ -482,13 +493,13 @@
             });
             
             if (tabName === 'borang') {
-                 document.getElementById('content-borang').classList.remove('hidden'); // PEMBETULAN
+                 document.getElementById('content-borang').classList.remove('hidden'); 
                  document.getElementById('tab-borang').classList.add('tab-active');
             } else {
                  // Guna 'alert' kustom yang tidak menyekat
                  showError("Tab ini sedang dalam pembinaan.");
-                 document.getElementById('content-borang').classList.remove('hidden'); // PEMBETULAN
-                 document.getElementById('tab-borang').classList.add('tab-active');
+                 document.getElementById('content-borang').classList.remove('hidden'); // Tunjukkan borang semula
+                 document.getElementById('tab-borang').classList.add('tab-active'); // Aktifkan tab borang semula
             }
         }
         
@@ -498,37 +509,37 @@
              resetBorangPenuh();
              
              if (mode === 'baru') {
-                elBorangLawatan.classList.remove('hidden'); // PEMBETULAN
-                elQueryLookupSection.classList.add('hidden'); // PEMBETULAN
-                elBtnModeBaru.classList.add('active');
-                elBtnModeQuery.classList.remove('active');
-                
-                elIsQueryMode.value = 'false';
-                elCurrentPermohonanId.value = '';
-                elQueryFileWarning.classList.add('hidden'); // PEMBETULAN
-                
-                // Tetapkan semula 'required' pada fail
-                document.getElementById('kertasKerja').required = true;
-                document.getElementById('maklumatAnggota').required = true;
-                document.getElementById('lampiranLesenBas').required = true;
-                document.getElementById('lampiranLesenPemandu').required = true;
-                document.getElementById('lampiranTaklimat').required = true;
-                
+                 elBorangLawatan.classList.remove('hidden'); 
+                 elQueryLookupSection.classList.add('hidden'); 
+                 elBtnModeBaru.classList.add('active');
+                 elBtnModeQuery.classList.remove('active');
+                 
+                 elIsQueryMode.value = 'false';
+                 elCurrentPermohonanId.value = '';
+                 elQueryFileWarning.classList.add('hidden'); 
+                 
+                 // Tetapkan semula 'required' pada fail
+                 document.getElementById('kertasKerja').required = true;
+                 document.getElementById('maklumatAnggota').required = true;
+                 document.getElementById('lampiranLesenBas').required = true;
+                 document.getElementById('lampiranLesenPemandu').required = true;
+                 document.getElementById('lampiranTaklimat').required = true;
+                 
              } else if (mode === 'query') {
-                elBorangLawatan.classList.add('hidden'); // PEMBETULAN
-                elQueryLookupSection.classList.remove('hidden'); // PEMBETULAN
-                elBtnModeBaru.classList.remove('active');
-                elBtnModeQuery.classList.add('active');
-                
-                elIsQueryMode.value = 'true';
-                elQueryFileWarning.classList.remove('hidden'); // PEMBETULAN
+                 elBorangLawatan.classList.add('hidden'); 
+                 elQueryLookupSection.classList.remove('hidden'); 
+                 elBtnModeBaru.classList.remove('active');
+                 elBtnModeQuery.classList.add('active');
+                 
+                 elIsQueryMode.value = 'true';
+                 elQueryFileWarning.classList.remove('hidden'); 
 
-                // Dalam mod query, fail tidak wajib diisi
-                document.getElementById('kertasKerja').required = false;
-                document.getElementById('maklumatAnggota').required = false;
-                document.getElementById('lampiranLesenBas').required = false;
-                document.getElementById('lampiranLesenPemandu').required = false;
-                document.getElementById('lampiranTaklimat').required = false;
+                 // Dalam mod query, fail tidak wajib diisi
+                 document.getElementById('kertasKerja').required = false;
+                 document.getElementById('maklumatAnggota').required = false;
+                 document.getElementById('lampiranLesenBas').required = false;
+                 document.getElementById('lampiranLesenPemandu').required = false;
+                 document.getElementById('lampiranTaklimat').required = false;
              }
         }
         
@@ -538,14 +549,14 @@
             const email = elQueryEmail.value.trim();
             
             if (!id || !email) {
-                elQueryLookupError.textContent = "Sila masukkan ID Permohonan dan E-mel.";
-                elQueryLookupError.classList.remove('hidden'); // PEMBETULAN
-                return;
+                 elQueryLookupError.textContent = "Sila masukkan ID Permohonan dan E-mel.";
+                 elQueryLookupError.classList.remove('hidden'); 
+                 return;
             }
             
             elBtnCariQuery.disabled = true;
             elBtnCariQuery.textContent = "Mencari...";
-            elQueryLookupError.classList.add('hidden'); // PEMBETULAN
+            elQueryLookupError.classList.add('hidden'); 
             
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=getPermohonanForEdit&id=${encodeURIComponent(id)}&email=${encodeURIComponent(email)}`, { method: 'GET' });
@@ -554,8 +565,8 @@
                 if (response.ok && data.status === "success") {
                     // Berjaya! Isi borang
                     fillBorang(data.data);
-                    elBorangLawatan.classList.remove('hidden'); // PEMBETULAN // Tunjukkan borang
-                    elQueryLookupSection.classList.add('hidden'); // PEMBETULAN // Sorok carian
+                    elBorangLawatan.classList.remove('hidden'); // Tunjukkan borang
+                    elQueryLookupSection.classList.add('hidden'); // Sorok carian
                     elCurrentPermohonanId.value = id; // Simpan ID untuk dihantar
                 } else {
                     throw new Error(data.message || "Ralat tidak diketahui");
@@ -563,7 +574,7 @@
             } catch (err) {
                 console.error("Ralat cariQuery:", err);
                 elQueryLookupError.textContent = `Ralat: ${err.message}. Pastikan ID, E-mel, dan URL API adalah betul.`;
-                elQueryLookupError.classList.remove('hidden'); // PEMBETULAN
+                elQueryLookupError.classList.remove('hidden'); 
             } finally {
                 elBtnCariQuery.disabled = false;
                 elBtnCariQuery.textContent = "Cari Permohonan";
@@ -580,9 +591,8 @@
             document.getElementById('emailSekolah').value = data["Email Rasmi Sekolah"];
             
             // Bahagian B
-            // Format tarikh YYYY-MM-DD
-            elTarikhMula.value = new Date(data["Tarikh Mula"]).toISOString().split('T')[0];
-            elTarikhAkhir.value = new Date(data["Tarikh Akhir"]).toISOString().split('T')[0];
+            elTarikhMula.value = data["Tarikh Mula"]; // Data dari GAS sudah format YYYY-MM-DD
+            elTarikhAkhir.value = data["Tarikh Akhir"]; // Data dari GAS sudah format YYYY-MM-DD
             document.getElementById('namaKetuaRombongan').value = data["Nama Ketua Rombongan"];
             document.getElementById('noTelKetuaRombongan').value = data["No Tel Ketua Rombongan"];
             document.getElementById('tempatLawatan').value = data["Tempat Lawatan"];
@@ -590,7 +600,6 @@
             document.getElementById('noTelPenginapan').value = data["No Tel Penginapan"];
             
             // Bahagian D (Kewangan)
-            // Kunci borang (cth: 'kew_murid_bil') kepada kunci Sheet (cth: 'Kewangan_Murid_Bil')
             const map = {
                 'kew_murid_bil': 'Kewangan_Murid_Bil', 'kew_murid_kutipan': 'Kewangan_Murid_Kutipan',
                 'kew_guru_bil': 'Kewangan_Guru_Bil', 'kew_guru_kutipan': 'Kewangan_Guru_Kutipan',
@@ -613,11 +622,11 @@
             elBorangLawatan.reset();
             clearSekolahFields();
             kiraJumlah();
-            elTarikhError.style.display = 'none';
-            elLookupError.style.display = 'none';
+            elTarikhError.classList.add('hidden');
+            elLookupError.classList.add('hidden');
             borangSuccess.classList.add('hidden');
             borangError.classList.add('hidden');
-            elQueryLookupError.style.display = 'none';
+            elQueryLookupError.classList.add('hidden');
             elQueryIdPermohonan.value = '';
             elQueryEmail.value = '';
         }
@@ -627,7 +636,7 @@
         window.validateTarikhMula = function() {
             // Jika dalam mod Query, ABAIKAN validasi 30 hari
             if (elIsQueryMode.value === 'true') {
-                elTarikhError.classList.add('hidden'); // PEMBETULAN
+                elTarikhError.classList.add('hidden'); 
                 return true;
             }
             
@@ -639,10 +648,10 @@
             tarikhMin.setDate(hariIni.getDate() + DAY_REQUIREMENT);
 
             if (tarikhDipilih < tarikhMin) {
-                elTarikhError.classList.remove('hidden'); // PEMBETULAN
+                elTarikhError.classList.remove('hidden'); 
                 return false;
             } else {
-                elTarikhError.classList.add('hidden'); // PEMBETULAN
+                elTarikhError.classList.add('hidden'); 
                 return true;
             }
         }
@@ -669,7 +678,7 @@
         window.lookupSekolah = function() {
             if (!DATABASE_SEKOLAH) {
                  elLookupError.textContent = "Pangkalan data sekolah belum sedia. Sila tunggu...";
-                 elLookupError.classList.remove('hidden'); // PEMBETULAN
+                 elLookupError.classList.remove('hidden'); 
                  return;
             }
 
@@ -679,8 +688,8 @@
                 return;
             }
 
-            elLookupSpinner.classList.remove('hidden'); // PEMBETULAN
-            elLookupError.classList.add('hidden'); // PEMBETULAN
+            elLookupSpinner.classList.remove('hidden'); 
+            elLookupError.classList.add('hidden'); 
             
             const data = DATABASE_SEKOLAH[kod];
             
@@ -692,10 +701,10 @@
                     elKategoriSekolah.value = data.kategori;
                 } else {
                     elLookupError.textContent = "Kod Sekolah tidak ditemui.";
-                    elLookupError.classList.remove('hidden'); // PEMBETULAN
+                    elLookupError.classList.remove('hidden'); 
                     clearSekolahFields();
                 }
-                elLookupSpinner.classList.add('hidden'); // PEMBETULAN
+                elLookupSpinner.classList.add('hidden'); 
             }, 300); // 300ms delay
         }
 
@@ -809,11 +818,12 @@
                 };
 
                 // Hantar ke API
+                // PEMBETULAN v7.4 (Poin 2): Guna 'text/plain' untuk elak preflight
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify(payload),
-                    headers: { 'Content-Type': 'application/json' },
-                    mode: 'cors' // Pastikan 'cors' ditambah
+                    mode: 'cors'
                 });
 
                 const data = await response.json();
@@ -858,25 +868,24 @@
         // Fungsi utiliti untuk mengawal status 'loading'
         function setLoading(isLoading) {
              if (isLoading) {
-                loadingSpinner.classList.remove('hidden'); // PEMBETULAN
-                submitButton.disabled = true;
-                submitButton.classList.add('opacity-50');
+                 loadingSpinner.classList.remove('hidden'); 
+                 submitButton.disabled = true;
+                 submitButton.classList.add('opacity-50');
              } else {
-                loadingSpinner.classList.add('hidden'); // PEMBETULAN
-                submitButton.disabled = false;
-                submitButton.classList.remove('opacity-50');
+                 loadingSpinner.classList.add('hidden'); 
+                 submitButton.disabled = false;
+                 submitButton.classList.remove('opacity-50');
              }
         }
 
         // =================================================
-        // PEMBETULAN: Panggil toggleMode('baru') di SINI, 
+        // PEMBETULAN v7.3: Panggil 'showTab' dan 'toggleMode'
         // selepas semua fungsi telah ditakrifkan.
         // =================================================
         window.showTab('borang');
-        toggleMode('baru');
+        window.toggleMode('baru');
 
     }); // Tutup 'DOMContentLoaded'
     </script>
 </body>
 </html>
-
