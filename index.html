@@ -3,7 +3,852 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Sistem Permohonan Lawatan JPNP</title>
+    <title>Sistem Permohonan Lawatan JPNP</title><!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistem Permohonan Lawatan JPNP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .tab-content { display: none; }
+    .tab-active { background-color: #1D4ED8; color: white; }
+    .hidden { display: none !important; }
+    .spinning { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .finance-table th, .finance-table td { padding: 8px 10px; border: 1px solid #e5e7eb; text-align: left; }
+    .finance-table input[type="number"] { width: 100%; }
+    .mode-button.active { background: #e0e7ff; color: #312e81; }
+    /* Simple modal */
+    .modal-backdrop { position: fixed; inset:0; background: rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:60; }
+    .modal { background:white; padding:20px; border-radius:8px; max-width:720px; width:95%; box-shadow:0 8px 30px rgba(0,0,0,0.15);}
+  </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+<div class="container mx-auto max-w-7xl p-6">
+
+  <header class="bg-white shadow rounded-lg p-6 mb-6 text-center">
+    <h1 class="text-3xl font-bold text-blue-800">Sistem Permohonan Lawatan Sambil Belajar</h1>
+    <p class="text-gray-600">Jabatan Pendidikan Negeri Pahang</p>
+  </header>
+
+  <!-- Tabs -->
+  <div class="bg-white rounded-lg shadow-md mb-6">
+    <nav class="flex">
+      <button id="tab-borang-btn" class="tab-button flex-1 p-4 font-semibold text-gray-700 tab-active" onclick="showTab('borang')">Borang Permohonan</button>
+      <button id="tab-dashboard-btn" class="tab-button flex-1 p-4 font-semibold text-gray-700" onclick="showTab('dashboard')">Dashboard JPN</button>
+      <button id="tab-kelulusan-btn" class="tab-button flex-1 p-4 font-semibold text-gray-700" onclick="showTab('kelulusan')">Kelulusan Pengarah</button>
+    </nav>
+  </div>
+
+  <!-- ===================================================================
+       TAB 1: BORANG PERMOHONAN
+       =================================================================== -->
+  <div id="content-borang" class="tab-content bg-white p-6 rounded-lg shadow-lg">
+    <div id="dbStatus" class="mb-4 p-3 bg-blue-50 text-blue-800 rounded-md text-sm">
+      <span class="font-semibold">STATUS:</span> Memuatkan pangkalan data sekolah...
+    </div>
+
+    <div class="mb-6">
+      <div class="inline-flex rounded-md shadow-sm">
+        <button id="btnModeBaru" class="mode-button active px-4 py-2">Permohonan Baru</button>
+        <button id="btnModeQuery" class="mode-button px-4 py-2">Hantar Semula (Query)</button>
+      </div>
+    </div>
+
+    <div id="queryLookupSection" class="hidden mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      <h3 class="font-semibold text-blue-800">Pembetulan Permohonan (Query)</h3>
+      <p class="text-sm text-gray-600">Masukkan ID Permohonan & E-mel yang digunakan sebelum ini.</p>
+      <div class="mt-3 flex gap-3">
+        <input id="queryIdPermohonan" placeholder="ID Permohonan" class="px-3 py-2 border rounded w-1/3">
+        <input id="queryEmail" placeholder="Email" type="email" class="px-3 py-2 border rounded w-1/3">
+        <button id="btnCariQuery" class="bg-blue-600 text-white px-4 py-2 rounded">Cari Permohonan</button>
+      </div>
+      <p id="queryLookupError" class="text-red-600 mt-2 hidden"></p>
+    </div>
+
+    <form id="borangLawatan" class="space-y-6">
+      <input type="hidden" id="isQueryMode" value="false">
+      <input type="hidden" id="currentPermohonanId" value="">
+
+      <!-- A: Maklumat Sekolah -->
+      <div class="border-b pb-4">
+        <h2 class="text-xl font-semibold">Bahagian A: Maklumat Sekolah</h2>
+        <p class="text-sm text-gray-600">Taip Kod Sekolah dan klik diluar.</p>
+        <div class="mt-3 grid grid-cols-1 sm:grid-cols-6 gap-3">
+          <div class="sm:col-span-2">
+            <label>Kod Sekolah</label>
+            <div class="relative">
+              <input id="kodSekolah" class="mt-2 block w-full rounded border px-2 py-2" disabled>
+              <svg id="lookupSpinner" class="spinning h-5 w-5 text-blue-600 absolute top-3 right-3 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+            </div>
+            <p id="lookupError" class="text-red-600 text-xs hidden"></p>
+          </div>
+          <div class="sm:col-span-4">
+            <label>Nama Sekolah</label>
+            <input id="namaSekolah" readonly class="mt-2 block w-full rounded border bg-gray-100 px-2 py-2">
+          </div>
+          <div class="sm:col-span-3">
+            <label>Daerah</label>
+            <input id="daerahSekolah" readonly class="mt-2 block w-full rounded border bg-gray-100 px-2 py-2">
+          </div>
+          <div class="sm:col-span-3">
+            <label>Kategori</label>
+            <input id="kategoriSekolah" readonly class="mt-2 block w-full rounded border bg-gray-100 px-2 py-2">
+          </div>
+        </div>
+      </div>
+
+      <!-- B: Maklumat Lawatan -->
+      <div class="border-b pb-4">
+        <h2 class="text-xl font-semibold">Bahagian B: Maklumat Lawatan</h2>
+        <div class="mt-3 grid grid-cols-1 sm:grid-cols-6 gap-3">
+          <div class="sm:col-span-3">
+            <label>Email Rasmi Sekolah</label>
+            <input id="emailSekolah" type="email" required class="mt-2 block w-full rounded border px-2 py-2">
+          </div>
+          <div class="sm:col-span-3">
+            <label>Tarikh Mula</label>
+            <input id="tarikhMula" type="date" required class="mt-2 block w-full rounded border px-2 py-2">
+            <p id="tarikhError" class="text-red-600 text-xs hidden">Tarikh mesti 30 hari dari hari ini (kecuali mode Query).</p>
+          </div>
+          <div class="sm:col-span-3">
+            <label>Tarikh Akhir</label>
+            <input id="tarikhAkhir" type="date" required class="mt-2 block w-full rounded border px-2 py-2">
+          </div>
+          <div class="sm:col-span-3">
+            <label>Nama Ketua Rombongan</label>
+            <input id="namaKetuaRombongan" required class="mt-2 block w-full rounded border px-2 py-2">
+          </div>
+          <div class="sm:col-span-3">
+            <label>No Tel Ketua Rombongan</label>
+            <input id="noTelKetuaRombongan" required class="mt-2 block w-full rounded border px-2 py-2">
+          </div>
+          <div class="sm:col-span-6">
+            <label>Tempat Lawatan</label>
+            <textarea id="tempatLawatan" rows="2" class="mt-2 block w-full rounded border px-2 py-2"></textarea>
+          </div>
+          <div class="sm:col-span-6">
+            <label>Alamat Penginapan (Jika ada)</label>
+            <textarea id="alamatPenginapan" rows="2" class="mt-2 block w-full rounded border px-2 py-2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- C: Muat Naik -->
+      <div class="border-b pb-4">
+        <h2 class="text-xl font-semibold">Bahagian C: Muat Naik Dokumen</h2>
+        <p id="queryFileWarning" class="text-sm text-red-600 hidden">Mod Query: memuat naik fail baru akan menggantikan fail sedia ada.</p>
+        <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label>1. Kertas Kerja (PDF)</label>
+            <input id="kertasKerja" accept=".pdf" type="file" class="mt-2 block w-full">
+          </div>
+          <div>
+            <label>2. Maklumat Anggota (PDF)</label>
+            <input id="maklumatAnggota" accept=".pdf" type="file" class="mt-2 block w-full">
+          </div>
+          <div>
+            <label>3. Lesen Bas (PDF / Image)</label>
+            <input id="lampiranLesenBas" accept=".pdf,image/*" type="file" class="mt-2 block w-full">
+          </div>
+          <div>
+            <label>4. Lesen Pemandu</label>
+            <input id="lampiranLesenPemandu" accept=".pdf,image/*" type="file" class="mt-2 block w-full">
+          </div>
+          <div>
+            <label>5. Taklimat Keselamatan</label>
+            <input id="lampiranTaklimat" accept=".pdf" type="file" class="mt-2 block w-full">
+          </div>
+        </div>
+      </div>
+
+      <!-- D: Kewangan (ringkas) -->
+      <div class="border-b pb-4">
+        <h2 class="text-xl font-semibold">Bahagian D: Maklumat Kewangan</h2>
+        <p class="text-sm text-gray-600">Isikan bilangan & kutipan — jumlah dikira automatik.</p>
+        <div class="mt-3 overflow-x-auto">
+          <table class="finance-table min-w-full">
+            <thead><tr><th>Sumber</th><th>Bil</th><th>Kutipan</th><th>Jumlah (RM)</th></tr></thead>
+            <tbody>
+              <tr><td>Murid</td><td><input id="kew_murid_bil" type="number" value="0"></td><td><input id="kew_murid_kutipan" type="number" step="0.01" value="0.00"></td><td><input id="kew_murid_jumlah" readonly value="0.00"></td></tr>
+              <tr><td>Guru</td><td><input id="kew_guru_bil" type="number" value="0"></td><td><input id="kew_guru_kutipan" type="number" step="0.01" value="0.00"></td><td><input id="kew_guru_jumlah" readonly value="0.00"></td></tr>
+              <tr><td>AKAUN SEKOLAH (PCG)</td><td><input id="kew_pcg_bil" type="number" value="0"></td><td><input id="kew_pcg_kutipan" type="number" step="0.01" value="0.00"></td><td><input id="kew_pcg_jumlah" readonly value="0.00"></td></tr>
+              <tr><td>JUMLAH</td><td colspan="2"></td><td><input id="kew_jumlah_besar" readonly value="0.00"></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center justify-between">
+        <div id="loading" class="text-blue-600 hidden">Menghantar...</div>
+        <div>
+          <button id="submitButton" type="submit" class="bg-blue-600 text-white px-5 py-3 rounded">Hantar Permohonan</button>
+        </div>
+      </div>
+    </form>
+
+    <div id="borangSuccess" class="hidden mt-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+      <strong>Permohonan Berjaya Dihantar!</strong>
+      <p>ID Permohonan: <span id="successId"></span></p>
+    </div>
+
+    <div id="borangError" class="hidden mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+      <strong>Ralat!</strong>
+      <p id="errorText"></p>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       TAB 2: DASHBOARD JPN
+       =================================================================== -->
+  <div id="content-dashboard" class="tab-content bg-white p-6 rounded-lg shadow-lg hidden">
+    <h2 class="text-2xl font-semibold mb-3">Dashboard JPN</h2>
+    <p class="text-sm text-gray-600 mb-3">Masukkan kata laluan untuk memuatkan data permohonan.</p>
+    <div class="flex gap-3 mb-4">
+      <input id="dashboardPassword" placeholder="Kata Laluan" type="password" class="px-3 py-2 border rounded w-1/3">
+      <button id="btnLoadData" class="bg-blue-600 text-white px-4 py-2 rounded">Muatkan Data</button>
+    </div>
+    <div id="dashboardMessages" class="mb-3"></div>
+
+    <div id="dashboardTableWrapper" class="hidden overflow-x-auto">
+      <table id="dashboardTable" class="min-w-full border-collapse">
+        <!-- dynamic -->
+      </table>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       TAB 3: KEULUSAN PENGARAH (Ringkasan - akan guna sama teknik)
+       =================================================================== -->
+  <div id="content-kelulusan" class="tab-content bg-white p-6 rounded-lg shadow-lg hidden">
+    <h2 class="text-2xl font-semibold">Kelulusan Pengarah</h2>
+    <p class="text-sm text-gray-600">Untuk pelulus akhir — akan memaparkan permohonan yang telah Lulus JPN sahaja.</p>
+    <div id="kelulusanArea" class="mt-4"></div>
+  </div>
+
+</div>
+
+<!-- Simple modal container -->
+<div id="modalRoot"></div>
+
+<script>
+/* ============================
+   CONFIG: Gantikan jika perlu
+   ============================ */
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXfvUGbXGZ8X-8OVhGRI4Y8-HJaXUbStnkiSj_DvwnqCuyPAl9eQOgNoZn1iru85lE/exec";
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRZ4X7exDV-Bu9BSV0IjGswnQjpoYBgXBT-llAz2Iwr4z8fGWV0VX-DWzzYAEMmq-CWGqlXDayGYED/pub?gid=0&single=true&output=csv";
+const DAY_REQUIREMENT = 30; // default 30 hari
+const SECRET_TOKEN = "12345"; // kata laluan dashboard
+
+/* ============================
+   STATE
+   ============================ */
+let DATABASE_SEKOLAH = null;
+const kewIds = ['murid','guru','pcg'];
+document.addEventListener('DOMContentLoaded', () => {
+
+  // DOM refs
+  const elDbStatus = document.getElementById('dbStatus');
+  const elKodSekolah = document.getElementById('kodSekolah');
+  const elNamaSekolah = document.getElementById('namaSekolah');
+  const elDaerahSekolah = document.getElementById('daerahSekolah');
+  const elKategoriSekolah = document.getElementById('kategoriSekolah');
+  const elLookupSpinner = document.getElementById('lookupSpinner');
+  const elLookupError = document.getElementById('lookupError');
+
+  const elBorang = document.getElementById('borangLawatan');
+  const elSubmitBtn = document.getElementById('submitButton');
+  const elLoading = document.getElementById('loading');
+  const elBorangSuccess = document.getElementById('borangSuccess');
+  const elSuccessId = document.getElementById('successId');
+  const elBorangError = document.getElementById('borangError');
+  const elErrorText = document.getElementById('errorText');
+
+  const elBtnModeBaru = document.getElementById('btnModeBaru');
+  const elBtnModeQuery = document.getElementById('btnModeQuery');
+  const elQuerySection = document.getElementById('queryLookupSection');
+  const elIsQueryMode = document.getElementById('isQueryMode');
+  const elCurrentPermohonanId = document.getElementById('currentPermohonanId');
+  const elQueryFileWarning = document.getElementById('queryFileWarning');
+
+  const elTarikhMula = document.getElementById('tarikhMula');
+  const elTarikhError = document.getElementById('tarikhError');
+
+  // Dashboard
+  const elPwd = document.getElementById('dashboardPassword');
+  const elBtnLoadData = document.getElementById('btnLoadData');
+  const elDashboardMessages = document.getElementById('dashboardMessages');
+  const elDashboardTableWrapper = document.getElementById('dashboardTableWrapper');
+  const elDashboardTable = document.getElementById('dashboardTable');
+
+  // init
+  loadSchoolDatabase();
+  toggleMode('baru');
+  showTab('borang');
+
+  // event listeners
+  elBtnModeBaru.addEventListener('click', () => toggleMode('baru'));
+  elBtnModeQuery.addEventListener('click', () => toggleMode('query'));
+  document.getElementById('btnCariQuery').addEventListener('click', cariQuery);
+  elKodSekolah.addEventListener('blur', lookupSekolah);
+
+  elTarikhMula.addEventListener('change', validateTarikhMula);
+
+  elBorang.addEventListener('submit', handleFormSubmit);
+
+  kewIds.forEach(id => {
+    const bil = document.getElementById(`kew_${id}_bil`);
+    const kutipan = document.getElementById(`kew_${id}_kutipan`);
+    if (bil) bil.addEventListener('input', kiraJumlah);
+    if (kutipan) kutipan.addEventListener('input', kiraJumlah);
+  });
+
+  elBtnLoadData.addEventListener('click', loadDashboardData);
+
+  // ============================
+  // FUNCTIONS
+  // ============================
+
+  async function loadSchoolDatabase() {
+    try {
+      elDbStatus.textContent = "STATUS: Memuatkan pangkalan data sekolah... Sila tunggu.";
+      const r = await fetch(CSV_URL);
+      if (!r.ok) throw new Error("Gagal muat CSV: " + r.statusText);
+      const csv = await r.text();
+      const lines = csv.trim().split('\n').map(l => l.trim());
+      const headers = parseCsvLine(lines[0]);
+      const idxKod = headers.indexOf('KOD_SEKOLAH');
+      const idxNama = headers.indexOf('NAMA_SEKOLAH');
+      const idxDaerah = headers.indexOf('DAERAH');
+      const idxKategori = headers.indexOf('KATEGORI');
+      if (idxKod === -1 || idxNama === -1) throw new Error("CSV header tidak lengkap (perlu KOD_SEKOLAH & NAMA_SEKOLAH).");
+      const db = {};
+      for (let i=1;i<lines.length;i++){
+        const values = parseCsvLine(lines[i]);
+        const kod = (values[idxKod] || '').toString().trim();
+        if (!kod) continue;
+        db[kod.toUpperCase()] = {
+          nama: (values[idxNama]||'').toString().trim(),
+          daerah: (values[idxDaerah]||'').toString().trim(),
+          kategori: (values[idxKategori]||'').toString().trim()
+        };
+      }
+      DATABASE_SEKOLAH = db;
+      elDbStatus.innerHTML = `<span class="font-semibold">STATUS:</span> Pangkalan data sekolah sedia (${Object.keys(db).length} rekod).`;
+      elDbStatus.classList.remove('bg-blue-50');
+      elKodSekolah.disabled = false;
+    } catch (err) {
+      console.error(err);
+      elDbStatus.innerHTML = `<span class="font-semibold">RALAT:</span> ${err.message}`;
+      elDbStatus.classList.add('text-red-700');
+    }
+  }
+
+  function parseCsvLine(line) {
+    // simple CSV split by comma (works for your published CSV)
+    // If your CSV contains commas inside quotes, consider stronger parser.
+    return line.split(',').map(s => s.replace(/^"|"$/g,'').trim());
+  }
+
+  function lookupSekolah() {
+    if (!DATABASE_SEKOLAH) {
+      elLookupError.textContent = "Pangkalan data belum sedia.";
+      elLookupError.classList.remove('hidden');
+      return;
+    }
+    const kode = (elKodSekolah.value || '').toString().trim().toUpperCase();
+    if (!kode || kode.length < 2) {
+      clearSekolahFields();
+      return;
+    }
+    elLookupSpinner.classList.remove('hidden');
+    elLookupError.classList.add('hidden');
+    setTimeout(() => {
+      const data = DATABASE_SEKOLAH[kode];
+      if (data) {
+        elNamaSekolah.value = data.nama;
+        elDaerahSekolah.value = data.daerah;
+        elKategoriSekolah.value = data.kategori;
+      } else {
+        elLookupError.textContent = "Kod Sekolah tidak ditemui.";
+        elLookupError.classList.remove('hidden');
+        clearSekolahFields();
+      }
+      elLookupSpinner.classList.add('hidden');
+    }, 250);
+  }
+
+  function clearSekolahFields() {
+    elNamaSekolah.value = '';
+    elDaerahSekolah.value = '';
+    elKategoriSekolah.value = '';
+  }
+
+  function toggleMode(mode) {
+    if (mode === 'baru') {
+      elIsQueryMode.value = 'false';
+      elCurrentPermohonanId.value = '';
+      document.getElementById('btnModeBaru').classList.add('active');
+      document.getElementById('btnModeQuery').classList.remove('active');
+      elQuerySection.classList.add('hidden');
+      document.querySelector('#borangLawatan').classList.remove('hidden');
+      elQueryFileWarning.classList.add('hidden');
+      // make files required (basic)
+      setRequiredFiles(true);
+    } else {
+      elIsQueryMode.value = 'true';
+      document.getElementById('btnModeBaru').classList.remove('active');
+      document.getElementById('btnModeQuery').classList.add('active');
+      elQuerySection.classList.remove('hidden');
+      document.querySelector('#borangLawatan').classList.add('hidden');
+      elQueryFileWarning.classList.remove('hidden');
+      setRequiredFiles(false);
+    }
+  }
+
+  function setRequiredFiles(flag) {
+    ['kertasKerja','maklumatAnggota','lampiranLesenBas','lampiranLesenPemandu','lampiranTaklimat'].forEach(id=>{
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (flag) el.required = true; else { el.required = false; }
+    });
+  }
+
+  function validateTarikhMula() {
+    if (elIsQueryMode.value === 'true') {
+      elTarikhError.classList.add('hidden');
+      return true;
+    }
+    const v = elTarikhMula.value;
+    if (!v) return true;
+    const chosen = new Date(v);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const minDate = new Date(today); minDate.setDate(minDate.getDate() + DAY_REQUIREMENT);
+    if (chosen < minDate) {
+      elTarikhError.classList.remove('hidden');
+      return false;
+    } else {
+      elTarikhError.classList.add('hidden');
+      return true;
+    }
+  }
+
+  function kiraJumlah() {
+    let total = 0;
+    kewIds.forEach(id => {
+      const bilEl = document.getElementById(`kew_${id}_bil`);
+      const kutipanEl = document.getElementById(`kew_${id}_kutipan`);
+      const jumlahEl = document.getElementById(`kew_${id}_jumlah`);
+      if (!bilEl || !kutipanEl || !jumlahEl) return;
+      const bil = parseFloat(bilEl.value) || 0;
+      const kutipan = parseFloat(kutipanEl.value) || 0;
+      const j = bil * kutipan;
+      jumlahEl.value = j.toFixed(2);
+      total += j;
+    });
+    const elTotal = document.getElementById('kew_jumlah_besar');
+    if (elTotal) elTotal.value = total.toFixed(2);
+  }
+
+  async function cariQuery() {
+    const id = document.getElementById('queryIdPermohonan').value.trim();
+    const email = document.getElementById('queryEmail').value.trim();
+    const errEl = document.getElementById('queryLookupError');
+    errEl.classList.add('hidden');
+    if (!id || !email) {
+      errEl.textContent = "Sila isi ID dan E-mel.";
+      errEl.classList.remove('hidden');
+      return;
+    }
+    const url = `${SCRIPT_URL}?action=getPermohonanForEdit&id=${encodeURIComponent(id)}&email=${encodeURIComponent(email)}`;
+    try {
+      const res = await fetch(url, { method: 'GET' });
+      const js = await res.json();
+      if (js.status === 'success') {
+        fillBorang(js.data);
+        toggleMode('baru');
+        document.getElementById('currentPermohonanId').value = id;
+        // show borang
+      } else {
+        errEl.textContent = js.message || 'Tidak dapat muatkan data.';
+        errEl.classList.remove('hidden');
+      }
+    } catch (err) {
+      errEl.textContent = 'Ralat: ' + err.message;
+      errEl.classList.remove('hidden');
+    }
+  }
+
+  function fillBorang(data) {
+    // map header names from sheet -> inputs
+    document.getElementById('kodSekolah').value = data['KodSekolah'] || data['Kod Sekolah'] || '';
+    document.getElementById('namaSekolah').value = data['NamaSekolah'] || data['Nama Sekolah'] || '';
+    document.getElementById('daerahSekolah').value = data['Daerah'] || '';
+    document.getElementById('kategoriSekolah').value = data['Kategori'] || '';
+    document.getElementById('emailSekolah').value = data['Email'] || data['EmailRasmiSekolah'] || data['Email Rasmi Sekolah'] || '';
+    if (data['TarikhMula']) document.getElementById('tarikhMula').value = toIsoDate(data['TarikhMula']);
+    if (data['TarikhAkhir']) document.getElementById('tarikhAkhir').value = toIsoDate(data['TarikhAkhir']);
+    document.getElementById('namaKetuaRombongan').value = data['NamaKetuaRombongan'] || data['Nama Ketua Rombongan'] || '';
+    document.getElementById('noTelKetuaRombongan').value = data['NoTelKetuaRombongan'] || data['No Tel Ketua Rombongan'] || '';
+    document.getElementById('tempatLawatan').value = data['TempatLawatan'] || data['Tempat Lawatan'] || '';
+    document.getElementById('alamatPenginapan').value = data['AlamatPenginapan'] || data['Alamat Penginapan'] || '';
+    document.getElementById('noTelPenginapan').value = data['NoTelPenginapan'] || data['No Tel Penginapan'] || '';
+    // kewangan mapping - try to set if present
+    try {
+      document.getElementById('kew_murid_bil').value = data['Kewangan_Murid_Bil'] || data['KewMuridBil'] || 0;
+      document.getElementById('kew_murid_kutipan').value = data['Kewangan_Murid_Kutipan'] || data['KewMuridKutipan'] || 0;
+      document.getElementById('kew_guru_bil').value = data['Kewangan_Guru_Bil'] || data['KewGuruBil'] || 0;
+      document.getElementById('kew_guru_kutipan').value = data['Kewangan_Guru_Kutipan'] || data['KewGuruKutipan'] || 0;
+      document.getElementById('kew_pcg_bil').value = data['Kewangan_AkaunSek_PCG_Bil'] || data['KewPcgBil'] || 0;
+      document.getElementById('kew_pcg_kutipan').value = data['Kewangan_AkaunSek_PCG_Kutipan'] || data['KewPcgKutipan'] || 0;
+    } catch (e) {}
+    kiraJumlah();
+  }
+
+  function toIsoDate(v) {
+    if (!v) return '';
+    // if Date object string, try parse
+    const d = new Date(v);
+    if (isNaN(d)) return v;
+    return d.toISOString().split('T')[0];
+  }
+
+  // read file -> base64
+  function readFileAsBase64(file) {
+    return new Promise((resolve,reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(fr.result);
+      fr.onerror = e => reject(e);
+      fr.readAsDataURL(file);
+    });
+  }
+
+  async function handleFormSubmit(ev) {
+    ev.preventDefault();
+    elBorangError.classList.add('hidden');
+    if (!validateTarikhMula()) {
+      showError("Tarikh mula tidak sah (perlu 30 hari dari hari ini).");
+      return;
+    }
+    setLoading(true);
+    const form = ev.target;
+    const isQuery = elIsQueryMode.value === 'true';
+    // files
+    const fileInputs = [
+      { id: 'kertasKerja', name:'kertasKerja' },
+      { id: 'maklumatAnggota', name:'maklumatAnggota' },
+      { id: 'lampiranLesenBas', name:'lampiranLesenBas' },
+      { id: 'lampiranLesenPemandu', name:'lampiranLesenPemandu' },
+      { id: 'lampiranTaklimat', name:'lampiranTaklimat' }
+    ];
+    // if new mode, ensure required files
+    if (!isQuery) {
+      for (const f of fileInputs) {
+        const el = document.getElementById(f.id);
+        if (!el || !el.files || !el.files[0]) {
+          setLoading(false);
+          showError("Mod permohonan baru: pastikan semua fail dimuat naik.");
+          return;
+        }
+      }
+    }
+    try {
+      // read files if exist
+      const filePromises = fileInputs.map(async fi => {
+        const el = document.getElementById(fi.id);
+        if (!el || !el.files || !el.files[0]) return null;
+        const file = el.files[0];
+        const dataUrl = await readFileAsBase64(file);
+        return {
+          name: fi.name,
+          filename: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          data: dataUrl.split(',')[1] // base64 part
+        };
+      });
+      const fileItems = await Promise.all(filePromises);
+      const filesObj = {};
+      fileItems.forEach(it => { if (it) filesObj[it.name] = { filename:it.filename, mimeType:it.mimeType, data:it.data }; });
+
+      // kewangan
+      const kewanganData = {
+        "Kewangan_Murid_Bil": document.getElementById('kew_murid_bil').value || 0,
+        "Kewangan_Murid_Kutipan": document.getElementById('kew_murid_kutipan').value || 0,
+        "Kewangan_Murid_Jumlah": document.getElementById('kew_murid_jumlah').value || 0,
+        "Kewangan_Guru_Bil": document.getElementById('kew_guru_bil').value || 0,
+        "Kewangan_Guru_Kutipan": document.getElementById('kew_guru_kutipan').value || 0,
+        "Kewangan_Guru_Jumlah": document.getElementById('kew_guru_jumlah').value || 0,
+        "Kewangan_AkaunSek_PCG_Bil": document.getElementById('kew_pcg_bil').value || 0,
+        "Kewangan_AkaunSek_PCG_Kutipan": document.getElementById('kew_pcg_kutipan').value || 0,
+        "Kewangan_AkaunSek_PCG_Jumlah": document.getElementById('kew_pcg_jumlah') ? document.getElementById('kew_pcg_jumlah').value : 0,
+        "Kewangan_Jumlah_Besar": document.getElementById('kew_jumlah_besar').value || 0
+      };
+
+      const payload = {
+        action: isQuery ? "resubmitPermohonan" : "submitPermohonan",
+        idPermohonan: document.getElementById('currentPermohonanId').value || '',
+        "Email Rasmi Sekolah": document.getElementById('emailSekolah').value,
+        "Kod Sekolah": document.getElementById('kodSekolah').value,
+        "Nama Sekolah": document.getElementById('namaSekolah').value,
+        "Daerah": document.getElementById('daerahSekolah').value,
+        "Kategori": document.getElementById('kategoriSekolah').value,
+        "Tarikh Mula": document.getElementById('tarikhMula').value,
+        "Tarikh Akhir": document.getElementById('tarikhAkhir').value,
+        "Nama Ketua Rombongan": document.getElementById('namaKetuaRombongan').value,
+        "No Tel Ketua Rombongan": document.getElementById('noTelKetuaRombongan').value,
+        "Tempat Lawatan": document.getElementById('tempatLawatan').value,
+        "Alamat Penginapan": document.getElementById('alamatPenginapan').value,
+        "No Tel Penginapan": document.getElementById('noTelPenginapan') ? document.getElementById('noTelPenginapan').value : '',
+        files: filesObj,
+        kewangan: kewanganData
+      };
+
+      // send as text/plain to avoid preflight
+      const r = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload),
+        mode: 'cors'
+      });
+
+      const txt = await r.text();
+      let js = {};
+      try { js = JSON.parse(txt); } catch(e) { js = { status:'error', message: 'Invalid JSON response from server', raw: txt}; }
+
+      if (js.status === 'success') {
+        elSuccessId.textContent = js.idPermohonan || payload.idPermohonan || js.id || '';
+        elBorangSuccess.classList.remove('hidden');
+        elBorangError.classList.add('hidden');
+
+        // small toast popup + auto reset 5s
+        showToast('Permohonan berjaya dihantar!', 5000);
+        setTimeout(()=> {
+          resetBorangPenuh();
+          toggleMode('baru');
+          window.scrollTo({top:0, behavior:'smooth'});
+        }, 5000);
+      } else {
+        showError(js.message || "Ralat tidak diketahui");
+      }
+    } catch (err) {
+      console.error("handleFormSubmit Error:", err);
+      showError(err.message || String(err));
+    } finally {
+      setLoading(false);
+    }
+  } // end handleFormSubmit
+
+  // small toast
+  function showToast(message, ms=4000) {
+    const t = document.createElement('div');
+    t.textContent = message;
+    t.style = "position:fixed;right:20px;bottom:20px;background:#10b981;color:white;padding:12px 18px;border-radius:8px;z-index:9999;box-shadow:0 8px 20px rgba(0,0,0,0.15);";
+    document.body.appendChild(t);
+    setTimeout(()=> { t.remove(); }, ms);
+  }
+
+  function showError(msg) {
+    elErrorText.textContent = msg;
+    elBorangError.classList.remove('hidden');
+    elBorangSuccess.classList.add('hidden');
+    window.scrollTo({top: document.body.scrollHeight, behavior:'smooth'});
+  }
+
+  function setLoading(flag) {
+    if (flag) {
+      elLoading.classList.remove('hidden');
+      elSubmitBtn.disabled = true;
+      elSubmitBtn.classList.add('opacity-50');
+    } else {
+      elLoading.classList.add('hidden');
+      elSubmitBtn.disabled = false;
+      elSubmitBtn.classList.remove('opacity-50');
+    }
+  }
+
+  function resetBorangPenuh() {
+    elBorang.reset();
+    clearSekolahFields();
+    elTarikhError.classList.add('hidden');
+    elBorangSuccess.classList.add('hidden');
+    elBorangError.classList.add('hidden');
+    document.getElementById('queryIdPermohonan').value = '';
+    document.getElementById('queryEmail').value = '';
+    document.getElementById('currentPermohonanId').value = '';
+    kiraJumlah();
+  }
+
+  // ============================
+  // DASHBOARD FUNCTIONS
+  // ============================
+  async function loadDashboardData() {
+    elDashboardMessages.textContent = '';
+    const pwd = elPwd.value || '';
+    if (pwd !== SECRET_TOKEN) {
+      elDashboardMessages.innerHTML = `<div class="p-3 bg-red-100 text-red-700 rounded">Kata laluan salah</div>`;
+      return;
+    }
+    elDashboardMessages.innerHTML = `<div class="p-3 bg-blue-50 text-blue-700 rounded">Memuatkan data...</div>`;
+    try {
+      const payload = { action: 'getData', token: SECRET_TOKEN };
+      const r = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload)
+      });
+      const txt = await r.text();
+      const js = JSON.parse(txt);
+      if (js.status !== 'success') {
+        elDashboardMessages.innerHTML = `<div class="p-3 bg-red-100 text-red-700 rounded">Ralat: ${js.message || 'tidak dapat muat data'}</div>`;
+        return;
+      }
+      renderDashboardTable(js.data || []);
+      elDashboardMessages.innerHTML = `<div class="p-3 bg-green-50 text-green-700 rounded">Data dimuatkan (${(js.data||[]).length} rekod)</div>`;
+    } catch (err) {
+      console.error(err);
+      elDashboardMessages.innerHTML = `<div class="p-3 bg-red-100 text-red-700 rounded">Ralat muat data: ${err.message}</div>`;
+    }
+  }
+
+  function renderDashboardTable(rows) {
+    // clear
+    elDashboardTable.innerHTML = '';
+    if (!rows || rows.length === 0) {
+      elDashboardTableWrapper.classList.add('hidden');
+      elDashboardTable.innerHTML = '';
+      return;
+    }
+    elDashboardTableWrapper.classList.remove('hidden');
+    // Build header using keys of first row
+    const keys = Object.keys(rows[0]);
+    const thead = document.createElement('thead');
+    const trh = document.createElement('tr');
+    keys.forEach(k => {
+      const th = document.createElement('th');
+      th.textContent = k;
+      th.style = "padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600";
+      trh.appendChild(th);
+    });
+    // extra actions column
+    const thAction = document.createElement('th'); thAction.textContent = 'Tindakan'; thAction.style = "padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600";
+    trh.appendChild(thAction);
+    thead.appendChild(trh);
+    elDashboardTable.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    rows.forEach(row => {
+      const tr = document.createElement('tr');
+      keys.forEach(k => {
+        const td = document.createElement('td');
+        td.style = "padding:8px;border-bottom:1px solid #f3f4f6;vertical-align:top;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis";
+        const v = row[k];
+        if (typeof v === 'string' && v.startsWith('http')) {
+          const a = document.createElement('a'); a.href = v; a.target = "_blank"; a.textContent = 'Muat Turun'; td.appendChild(a);
+        } else {
+          td.textContent = v !== undefined && v !== null ? v : '';
+        }
+        tr.appendChild(td);
+      });
+      // actions
+      const tdAction = document.createElement('td');
+      tdAction.style = "padding:8px;border-bottom:1px solid #f3f4f6";
+      const id = row['IDPermohonan'] || row['IDPermohonan'] || row['ID'] || row['IDPermohonan'];
+      const status = row['Status'] || '';
+      // Query button
+      const btnQuery = document.createElement('button');
+      btnQuery.textContent = 'Query';
+      btnQuery.className = 'px-2 py-1 bg-yellow-400 rounded mr-2';
+      btnQuery.onclick = () => openQueryModal(id, row);
+      tdAction.appendChild(btnQuery);
+      // Lulus & Jana Surat
+      const btnLulus = document.createElement('button');
+      btnLulus.textContent = 'Lulus & Jana Surat';
+      btnLulus.className = 'px-2 py-1 bg-green-600 text-white rounded';
+      btnLulus.onclick = () => approveFromDashboard(id, row);
+      tdAction.appendChild(btnLulus);
+
+      tr.appendChild(tdAction);
+      tbody.appendChild(tr);
+    });
+    elDashboardTable.appendChild(tbody);
+    // add horizontal scroll hint
+  }
+
+  function openQueryModal(id, row) {
+    const modalRoot = document.getElementById('modalRoot');
+    modalRoot.innerHTML = '';
+    const backdrop = document.createElement('div'); backdrop.className='modal-backdrop';
+    const modal = document.createElement('div'); modal.className='modal';
+    modal.innerHTML = `<h3 class="font-semibold text-lg mb-2">Hantar Query untuk ${id}</h3>
+      <label class="block text-sm text-gray-700">Catatan / Arahan</label>
+      <textarea id="modalQueryNote" rows="4" class="w-full border rounded p-2 mb-3"></textarea>
+      <div class="flex justify-end gap-2"><button id="modalCancel" class="px-3 py-2 border rounded">Batal</button><button id="modalSend" class="px-3 py-2 bg-yellow-400 rounded">Hantar Query</button></div>`;
+    backdrop.appendChild(modal);
+    modalRoot.appendChild(backdrop);
+    document.getElementById('modalCancel').onclick = ()=> modalRoot.innerHTML = '';
+    document.getElementById('modalSend').onclick = async () => {
+      const note = document.getElementById('modalQueryNote').value || '-';
+      modalRoot.innerHTML = '';
+      // send updateStatusJPN
+      try {
+        const payload = { action:'updateStatusJPN', token: SECRET_TOKEN, idPermohonan: id, newStatus: 'Query', note: note, daysToRespond: 7, disemakOleh: 'Pegawai JPN' };
+        const r = await fetch(SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
+        const txt = await r.text(); const js = JSON.parse(txt);
+        if (js.status === 'success') {
+          showToast('Query dihantar & e-mel kepada sekolah.', 4000);
+          loadDashboardData();
+        } else {
+          showToast('Ralat: ' + (js.message||'tidak berjaya'), 6000);
+        }
+      } catch (e) {
+        showToast('Ralat menghantar query: ' + e.message, 6000);
+      }
+    };
+  }
+
+  async function approveFromDashboard(id, row) {
+    if (!confirm(`Anda pasti mahu Lulus & Jana Surat untuk ${id}?`)) return;
+    try {
+      const payload = { action:'approveFinal', token: SECRET_TOKEN, idPermohonan: id };
+      const r = await fetch(SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
+      const txt = await r.text(); const js = JSON.parse(txt);
+      if (js.status === 'success') {
+        showToast('Surat dijana & e-mel dihantar.', 5000);
+        loadDashboardData();
+      } else {
+        showToast('Ralat semasa jana surat: ' + (js.message||''), 6000);
+      }
+    } catch (e) {
+      showToast('Ralat: ' + e.message, 6000);
+    }
+  }
+
+  // Tab navigation
+  window.showTab = function(tab) {
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('tab-active'));
+    if (tab === 'borang') {
+      document.getElementById('content-borang').classList.remove('hidden');
+      document.getElementById('tab-borang-btn').classList.add('tab-active');
+    } else if (tab === 'dashboard') {
+      document.getElementById('content-dashboard').classList.remove('hidden');
+      document.getElementById('tab-dashboard-btn').classList.add('tab-active');
+    } else if (tab === 'kelulusan') {
+      document.getElementById('content-kelulusan').classList.remove('hidden');
+      document.getElementById('tab-kelulusan-btn').classList.add('tab-active');
+    }
+  };
+
+}); // DOMContentLoaded end
+</script>
+</body>
+</html>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tab-content { display:block; }
