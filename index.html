@@ -6,7 +6,9 @@
   <title>Sistem Permohonan Lawatan JPNP</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .tab-content { display: none; }
+    /* NOTE: Jangan letak `display:none` pada .tab-content.
+       Kawal visibiliti menggunakan kelas .hidden supaya JS boleh tambah/buangnya. */
+    .tab-content { }
     .tab-active { background-color: #1D4ED8; color: white; }
     .hidden { display: none; }
     .spinning { animation: spin 1s linear infinite; }
@@ -269,9 +271,7 @@ const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRZ4X7exDV-Bu9
 const DAY_REQUIREMENT = 30;
 let DATABASE_SEKOLAH = null;
 
-/* ========== DOMContentLoaded ========== */
 document.addEventListener('DOMContentLoaded', () => {
-  /* --- Element refs --- */
   const elBorangLawatan = document.getElementById('borangLawatan');
   const loadingSpinner = document.getElementById('loading');
   const submitButton = document.getElementById('submitButton');
@@ -305,8 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const successId = document.getElementById('successId');
   const errorText = document.getElementById('errorText');
 
-  /* ========== DEFINISI FUNGSI (semua didefinisikan SEBELUM listeners) ========== */
-
+  /* Fungsi */
   function parseCsvHeaders(line) {
     if (!line) return [];
     if (line.charCodeAt(0) === 0xFEFF) line = line.slice(1);
@@ -614,7 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  /* ========== DAFTAR EVENT LISTENERS (SELEPAS semua fungsi didefinisikan) ========== */
+  /* Daftar listeners */
   loadSchoolDatabase();
 
   elBorangLawatan.addEventListener('submit', handleFormSubmit);
@@ -634,7 +633,6 @@ document.addEventListener('DOMContentLoaded', () => {
   window.showTab('borang');
   toggleMode('baru');
 });
-/* ========== end DOMContentLoaded ========== */
 
 /* showTab global (untuk onclick nav) */
 window.showTab = function(tabName) {
