@@ -394,9 +394,6 @@
         // Mula muatkan pangkalan data sekolah
         loadSchoolDatabase();
 
-        // Tunjukkan borang 'Baru' secara lalai
-        toggleMode('baru');
-
         // Tambah 'event listener' pada elemen borang
         elBorangLawatan.addEventListener('submit', handleFormSubmit);
         elTarikhMula.addEventListener('change', validateTarikhMula);
@@ -874,6 +871,12 @@
                 submitButton.classList.remove('opacity-50');
              }
         }
+
+        // =================================================
+        // PEMBETULAN: Panggil toggleMode('baru') di SINI, 
+        // selepas semua fungsi telah ditakrifkan.
+        // =================================================
+        toggleMode('baru');
 
     }); // Tutup 'DOMContentLoaded'
     </script>
