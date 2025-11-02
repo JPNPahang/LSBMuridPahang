@@ -13,6 +13,7 @@
       <div class="text-sm">Status: <span id="statusBadge">Bersedia</span></div>
     </div>
   </header>
+
   <main class="max-w-5xl mx-auto p-4">
     <div class="flex gap-2 mb-4">
       <button id="tabPermohonan" class="px-4 py-2 bg-white rounded shadow">Permohonan</button>
@@ -121,7 +122,7 @@
       </form>
     </section>
 
-    <!-- Semakan -->
+    <!-- Semakan (Pegawai) -->
     <section id="semakanSection" class="hidden bg-white p-6 rounded shadow mt-4">
       <h2 class="text-xl font-semibold mb-2">Semakan (Pegawai)</h2>
       <div class="flex gap-2 mb-3">
@@ -135,7 +136,7 @@
       <div id="requestsTable" class="overflow-auto max-h-96"></div>
     </section>
 
-    <!-- Kelulusan DP -->
+    <!-- Kelulusan (Timbalan) -->
     <section id="kelulusanSection" class="hidden bg-white p-6 rounded shadow mt-4">
       <h2 class="text-xl font-semibold mb-2">Kelulusan (Timbalan)</h2>
       <div class="flex gap-2 mb-3">
@@ -145,27 +146,30 @@
     </section>
   </main>
 
+  <!-- Loading overlay -->
   <div id="loadingModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center">
     <div class="bg-white p-6 rounded shadow">Sila tunggu — proses sedang dijalankan...</div>
   </div>
 
 <script>
-/* ========== CONFIG ========== */
+/* ==================== CONFIG ==================== */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbx_B7hzQrDtlks5fAynamk1s143zUvCxVWEQwfeNC3-BmKCAR9CZ27Sqml7qhIWZN3O/exec';
-/* ====================================================================== */
+/* ================================================= */
 
 function $(id){ return document.getElementById(id); }
 function showLoading(){ $('loadingModal').classList.remove('hidden'); $('loadingModal').classList.add('flex'); }
 function hideLoading(){ $('loadingModal').classList.add('hidden'); $('loadingModal').classList.remove('flex'); }
 
-/* Leaders dynamic */
+/* ========== Leaders dynamic ========== */
 let leaders = [];
 function renderLeaders(){
   const container = $('leaderList'); container.innerHTML='';
   if (leaders.length===0) leaders.push('');
   leaders.forEach((l,i)=>{
     const div = document.createElement('div'); div.className='flex gap-2';
-    div.innerHTML = `<input class="flex-1 border p-2 rounded leaderInput" value="${l}" data-index="${i}" placeholder="Nama Ketua ${i+1}" /><button type="button" data-index="${i}" class="removeLead bg-red-500 text-white px-2 rounded">X</button>`;
+    div.innerHTML = `
+      <input class="flex-1 border p-2 rounded leaderInput" value="${l}" data-index="${i}" placeholder="Nama Ketua ${i+1}" />
+      <button type="button" data-index="${i}" class="removeLead bg-red-500 text-white px-2 rounded">X</button>`;
     container.appendChild(div);
   });
   container.querySelectorAll('.removeLead').forEach(btn=>btn.addEventListener('click', (ev)=>{ const i=ev.target.dataset.index; leaders.splice(i,1); renderLeaders(); }));
@@ -174,9 +178,10 @@ function renderLeaders(){
 $('addLeader').addEventListener('click', ()=>{ leaders.push(''); renderLeaders(); });
 renderLeaders();
 
-/* Submit permohonan */
+/* ========== Permohonan: hantar sebagai JSON (base64) ========== */
 $('permohonanForm').addEventListener('submit', async function(ev){
   ev.preventDefault();
+
   const payload = {
     schoolCode: $('schoolCode').value.trim(),
     schoolName: $('schoolName').value.trim(),
@@ -185,49 +190,77 @@ $('permohonanForm').addEventListener('submit', async function(ev){
     travelStartDate: $('travelStart').value,
     travelEndDate: $('travelEnd').value,
     leaderNames: leaders.filter(Boolean),
-    leaderPhones: [], // extendable
+    leaderPhones: [], // boleh ditambah jika perlu
     vehicleCount: $('vehicleCount').value,
     placeVisit: $('placeVisit').value,
     accommodation: $('accommodation').value,
     participantCount: $('participantCount').value
   };
 
-  // client-side date validation
+  // Validasi tarikh client-side
   const start = new Date(payload.travelStartDate);
   const today = new Date(); today.setHours(0,0,0,0);
   const min = new Date(today.getTime() + 30*24*60*60*1000);
-  if (isNaN(start.getTime()) || start < min) { alert('Tarikh permulaan mesti sekurang-kurangnya 30 hari dari hari ini.'); return; }
+  if (isNaN(start.getTime()) || start < min) {
+    alert('Tarikh mula mesti sekurang-kurangnya 30 hari dari hari ini.');
+    return;
+  }
 
-  const formData = new FormData();
-  formData.append('payload', JSON.stringify(payload));
-  const fileKeys = ['kertasKerja','maklumatAnggota','permitBas','lesenPemandu','taklimat'];
-  fileKeys.forEach(key=>{
-    const el = $('file_' + key);
-    if (el && el.files && el.files[0]) formData.append(key, el.files[0], el.files[0].name);
-  });
+  // Helper: tukar file ke base64
+  async function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve({
+        name: file.name,
+        type: file.type || 'application/pdf',
+        data: r.result.split(',')[1]
+      });
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  // Ambil fail-fail
+  const filesBase64 = {};
+  const fileMap = {
+    kertasKerja: $('file_kertasKerja').files[0],
+    maklumatAnggota: $('file_maklumatAnggota').files[0],
+    permitBas: $('file_permitBas').files[0],
+    lesenPemandu: $('file_lesenPemandu').files[0],
+    taklimat: $('file_taklimat').files[0],
+  };
+  for (const key in fileMap) {
+    if (fileMap[key]) filesBase64[key] = await fileToBase64(fileMap[key]);
+  }
 
   showLoading();
   try {
-    const res = await fetch(GAS_URL, { method:'POST', body: formData });
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payload, filesBase64 })
+    });
     const j = await res.json();
     hideLoading();
     if (j.ok) {
       alert('Permohonan berjaya dihantar.\nNombor rujukan: ' + j.requestId);
       $('permohonanForm').reset();
       leaders = []; renderLeaders();
-    } else alert('Gagal: ' + (j.message || JSON.stringify(j)));
+    } else {
+      alert('Gagal: ' + (j.message || j.error || JSON.stringify(j)));
+    }
   } catch (err) {
     hideLoading();
     alert('Ralat sambungan: ' + err.message);
   }
 });
 
-/* Tabs */
+/* ========== Tabs ========== */
 $('tabPermohonan').addEventListener('click', ()=>{ $('permohonanSection').classList.remove('hidden'); $('semakanSection').classList.add('hidden'); $('kelulusanSection').classList.add('hidden'); });
 $('tabSemakan').addEventListener('click', ()=>{ $('permohonanSection').classList.add('hidden'); $('semakanSection').classList.remove('hidden'); $('kelulusanSection').classList.add('hidden'); });
 $('tabKelulusan').addEventListener('click', ()=>{ $('permohonanSection').classList.add('hidden'); $('semakanSection').classList.add('hidden'); $('kelulusanSection').classList.remove('hidden'); });
 
-/* Pegawai login & fetch */
+/* ========== Pegawai: login & senarai ========== */
 let officerSecret = null;
 $('loginOfficer').addEventListener('click', async ()=>{
   const pw = prompt('Masukkan kata laluan Pegawai:');
@@ -244,39 +277,63 @@ async function loadRequests(){
   if (!j.ok) return alert('Gagal memuat permohonan: ' + (j.message||''));
   const requests = j.requests;
   const table = document.createElement('table'); table.className='w-full text-sm';
-  table.innerHTML = `<thead><tr class="bg-gray-100"><th class="p-2">ID</th><th>Nama Sekolah</th><th>Tarikh</th><th>Status</th><th>Tindakan</th></tr></thead>`;
+  table.innerHTML = `<thead><tr class="bg-gray-100">
+    <th class="p-2">ID</th><th>Nama Sekolah</th><th>Tarikh</th><th>Status</th><th>Tindakan</th></tr></thead>`;
   const tb = document.createElement('tbody');
   for (const req of requests) {
     const filter = $('filterCategory').value;
     if (filter && req['Category'] !== filter) continue;
     const tr = document.createElement('tr'); tr.className='border-b';
-    tr.innerHTML = `<td class="p-2">${req['Request ID']}</td><td>${req['School Name'] || ''}</td><td>${req['Travel Start'] || ''}</td><td>${req['Status'] || ''}</td>`;
+    tr.innerHTML = `<td class="p-2">${req['Request ID']}</td>
+      <td>${req['School Name'] || ''}</td>
+      <td>${req['Travel Start'] || ''}</td>
+      <td>${req['Status'] || ''}</td>`;
     const td = document.createElement('td'); td.className='p-2';
-    const viewBtn = document.createElement('button'); viewBtn.className='px-2 py-1 border rounded mr-2'; viewBtn.textContent='LIHAT FAIL';
+
+    // Lihat fail: Kertas Kerja (contoh)
+    const viewBtn = document.createElement('button'); 
+    viewBtn.className='px-2 py-1 border rounded mr-2'; 
+    viewBtn.textContent='LIHAT FAIL';
     viewBtn.addEventListener('click', ()=> {
-      // open KERTAS KERJA as example; you can extend to show all files in a modal
-      if (req['File_KERTAS_KERJA']) window.open(req['File_KERTAS_KERJA'],'_blank'); else alert('Tiada fail kertas kerja.');
+      if (req['File_KERTAS_KERJA']) window.open(req['File_KERTAS_KERJA'],'_blank'); 
+      else alert('Tiada fail kertas kerja.');
     });
-    const queryBtn = document.createElement('button'); queryBtn.className='px-2 py-1 bg-yellow-400 rounded mr-2'; queryBtn.textContent='Query';
+
+    // Query
+    const queryBtn = document.createElement('button'); 
+    queryBtn.className='px-2 py-1 bg-yellow-400 rounded mr-2'; 
+    queryBtn.textContent='Query';
     queryBtn.addEventListener('click', ()=> {
       const note = prompt('Catatan (kenapa query):');
       if (note) sendOfficerAction(req['Request ID'], 'query', note);
     });
-    const preapproveBtn = document.createElement('button'); preapproveBtn.className='px-2 py-1 bg-green-600 text-white rounded'; preapproveBtn.textContent='Lulus (Jana Surat)';
+
+    // Lulus (Jana Surat)
+    const preapproveBtn = document.createElement('button'); 
+    preapproveBtn.className='px-2 py-1 bg-green-600 text-white rounded'; 
+    preapproveBtn.textContent='Lulus (Jana Surat)';
     preapproveBtn.addEventListener('click', ()=> {
       const noJilid = prompt('No Jilid Surat:');
       const bilSurat = prompt('Bil Surat (angka):', '1');
       const tarikhSurat = prompt('Tarikh Surat (YYYY-MM-DD):', new Date().toISOString().slice(0,10));
       if (noJilid && bilSurat && tarikhSurat) {
         sendOfficerAction(req['Request ID'],'preapprove','', 'Menengah').then(()=>{
-          fetch(GAS_URL + '?action=generateLetters&id=' + encodeURIComponent(req['Request ID']) + '&secret=' + encodeURIComponent(officerSecret) + '&noJilid=' + encodeURIComponent(noJilid) + '&bilSurat=' + encodeURIComponent(bilSurat) + '&tarikhSurat=' + encodeURIComponent(tarikhSurat))
+          fetch(GAS_URL + '?action=generateLetters&id=' + encodeURIComponent(req['Request ID']) + 
+                '&secret=' + encodeURIComponent(officerSecret) + 
+                '&noJilid=' + encodeURIComponent(noJilid) + 
+                '&bilSurat=' + encodeURIComponent(bilSurat) + 
+                '&tarikhSurat=' + encodeURIComponent(tarikhSurat))
             .then(r=>r.json()).then(j2=>{
-              if (j2.ok) { alert('Surat dijana.'); loadRequests(); } else alert('Gagal jana surat: ' + (j2.message||JSON.stringify(j2)));
+              if (j2.ok) { alert('Surat dijana.'); loadRequests(); } 
+              else alert('Gagal jana surat: ' + (j2.message||JSON.stringify(j2)));
             });
         });
       }
     });
-    td.appendChild(viewBtn); td.appendChild(queryBtn); td.appendChild(preapproveBtn);
+
+    td.appendChild(viewBtn); 
+    td.appendChild(queryBtn); 
+    td.appendChild(preapproveBtn);
     tr.appendChild(td);
     tb.appendChild(tr);
   }
@@ -284,25 +341,29 @@ async function loadRequests(){
   $('requestsTable').innerHTML=''; $('requestsTable').appendChild(table);
 }
 
-/* send officer action */
 async function sendOfficerAction(id, type, note='', pic='Menengah') {
-  const url = GAS_URL + '?action=officerAction&id=' + encodeURIComponent(id) + '&type=' + encodeURIComponent(type) + '&note=' + encodeURIComponent(note) + '&pic=' + encodeURIComponent(pic) + '&secret=' + encodeURIComponent(officerSecret);
+  const url = GAS_URL + '?action=officerAction&id=' + encodeURIComponent(id) + 
+              '&type=' + encodeURIComponent(type) + 
+              '&note=' + encodeURIComponent(note) + 
+              '&pic=' + encodeURIComponent(pic) + 
+              '&secret=' + encodeURIComponent(officerSecret);
   const r = await fetch(url);
   const j = await r.json();
-  if (j.ok) { alert('Berjaya: ' + j.message); loadRequests(); return true; } else { alert('Gagal: ' + (j.message||JSON.stringify(j))); return false; }
+  if (j.ok) { alert('Berjaya: ' + j.message); loadRequests(); return true; } 
+  else { alert('Gagal: ' + (j.message||JSON.stringify(j))); return false; }
 }
 
-/* Timbalan login */
+/* ========== Timbalan ========== */
 let dpSecret = null;
 $('loginDP').addEventListener('click', async ()=>{
   const pw = prompt('Masukkan kata laluan Timbalan:');
   if (!pw) return;
   const res = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
   const j = await res.json();
-  if (j.ok) { dpSecret = pw; alert('Berjaya login sebagai Timbalan'); loadDpList(); } else alert('Kata laluan salah.');
+  if (j.ok) { dpSecret = pw; alert('Berjaya login sebagai Timbalan'); loadDpList(); } 
+  else alert('Kata laluan salah.');
 });
 
-/* load list for DP (only READY_FOR_DP or PREAPPROVED) */
 async function loadDpList(){
   if (!dpSecret) return alert('Sila log masuk.');
   const res = await fetch(GAS_URL + '?action=listRequests&secret=' + encodeURIComponent(dpSecret));
@@ -312,8 +373,11 @@ async function loadDpList(){
   const div = document.createElement('div');
   requests.forEach(req=>{
     const card = document.createElement('div'); card.className='border p-3 mb-2 rounded';
-    card.innerHTML = `<div class="font-semibold">${req['Request ID']} — ${req['School Name']}</div><div class="text-sm">Status: ${req['Status']}</div>`;
-    const btn = document.createElement('button'); btn.className='mt-2 px-3 py-1 bg-green-600 text-white rounded'; btn.textContent='Diluluskan (Hantar Surat)';
+    card.innerHTML = `<div class="font-semibold">${req['Request ID']} — ${req['School Name']}</div>
+                      <div class="text-sm">Status: ${req['Status']}</div>`;
+    const btn = document.createElement('button'); 
+    btn.className='mt-2 px-3 py-1 bg-green-600 text-white rounded'; 
+    btn.textContent='Diluluskan (Hantar Surat)';
     btn.addEventListener('click', async ()=>{
       if (!confirm('Sahkan hantar surat kelulusan kepada sekolah?')) return;
       const r2 = await fetch(GAS_URL + '?action=finalApprove&id=' + encodeURIComponent(req['Request ID']) + '&secret=' + encodeURIComponent(dpSecret));
