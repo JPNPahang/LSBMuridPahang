@@ -1,10 +1,16 @@
 <!doctype html>
 <html lang="ms">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>e-SPA Lawatan — JPN Pahang</title>
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>e-SPA Lawatan — JPN Pahang</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- SweetAlert2 for nice alerts -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    /* simple modal backdrop for file list (if needed) */
+    .modal-backdrop { background: rgba(0,0,0,0.45); }
+  </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
   <header class="bg-blue-700 text-white p-4">
@@ -119,10 +125,46 @@
           <button id="submitBtn" class="px-4 py-2 bg-green-600 text-white rounded">Hantar Permohonan</button>
           <div id="submitStatus" class="self-center text-sm text-gray-600"></div>
         </div>
+
+        <!-- Query response small block (sekolah boleh guna tanpa login) -->
+        <hr class="my-4"/>
+        <div class="bg-yellow-50 p-3 rounded">
+          <h3 class="font-semibold">Balas Query (tanpa login)</h3>
+          <p class="text-sm text-gray-600">Masukkan <strong>Query ID</strong> dari emel pegawai dan muat naik fail yang diminta.</p>
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <input id="queryIdInput" class="border p-2 rounded" placeholder="Contoh: QRY-17620..." />
+            <input id="querySchoolEmail" class="border p-2 rounded" placeholder="Email sekolah (untuk pengesahan)" />
+          </div>
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <div>
+              <label class="text-sm">KERTAS KERJA (jika perlu)</label>
+              <input type="file" id="q_file_kertasKerja" accept="application/pdf" />
+            </div>
+            <div>
+              <label class="text-sm">MAKLUMAT ANGGOTA</label>
+              <input type="file" id="q_file_maklumatAnggota" accept="application/pdf" />
+            </div>
+            <div>
+              <label class="text-sm">PERMIT BAS</label>
+              <input type="file" id="q_file_permitBas" accept="application/pdf" />
+            </div>
+            <div>
+              <label class="text-sm">LESEN PEMANDU</label>
+              <input type="file" id="q_file_lesenPemandu" accept="application/pdf" />
+            </div>
+            <div>
+              <label class="text-sm">INTIPATI TAKLIMAT</label>
+              <input type="file" id="q_file_taklimat" accept="application/pdf" />
+            </div>
+          </div>
+          <div class="mt-3">
+            <button id="submitQueryResp" class="px-3 py-1 bg-yellow-600 text-white rounded">Hantar Balasan Query</button>
+          </div>
+        </div>
       </form>
     </section>
 
-    <!-- Semakan (Pegawai) -->
+    <!-- Semakan -->
     <section id="semakanSection" class="hidden bg-white p-6 rounded shadow mt-4">
       <h2 class="text-xl font-semibold mb-2">Semakan (Pegawai)</h2>
       <div class="flex gap-2 mb-3">
@@ -136,7 +178,7 @@
       <div id="requestsTable" class="overflow-auto max-h-96"></div>
     </section>
 
-    <!-- Kelulusan (Timbalan) -->
+    <!-- Kelulusan DP -->
     <section id="kelulusanSection" class="hidden bg-white p-6 rounded shadow mt-4">
       <h2 class="text-xl font-semibold mb-2">Kelulusan (Timbalan)</h2>
       <div class="flex gap-2 mb-3">
@@ -147,14 +189,15 @@
   </main>
 
   <!-- Loading overlay -->
-  <div id="loadingModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center">
+  <div id="loadingModal" class="fixed inset-0 hidden items-center justify-center modal-backdrop z-50">
     <div class="bg-white p-6 rounded shadow">Sila tunggu — proses sedang dijalankan...</div>
   </div>
 
 <script>
-/* ==================== CONFIG ==================== */
+/* ========== CONFIG ========== */
+// Gantikan dengan URL Web App anda jika berbeza
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbx_B7hzQrDtlks5fAynamk1s143zUvCxVWEQwfeNC3-BmKCAR9CZ27Sqml7qhIWZN3O/exec';
-/* ================================================= */
+/* ====================================================================== */
 
 function $(id){ return document.getElementById(id); }
 function showLoading(){ $('loadingModal').classList.remove('hidden'); $('loadingModal').classList.add('flex'); }
@@ -198,10 +241,23 @@ function renderLeaders(){
 $('addLeader').addEventListener('click', ()=>{ leaders.push({name:'', phone:''}); renderLeaders(); });
 renderLeaders();
 
-/* ========== Permohonan: hantar sebagai JSON (base64) WITHOUT content-type header ========== */
+/* ========== Helper: file -> base64 ========== */
+async function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve({
+      name: file.name,
+      type: file.type || 'application/pdf',
+      data: r.result.split(',')[1]
+    });
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+/* ========== Submit permohonan (new) ========== */
 $('permohonanForm').addEventListener('submit', async function(ev){
   ev.preventDefault();
-  // disable submit
   $('submitBtn').disabled = true;
 
   const payload = {
@@ -219,32 +275,19 @@ $('permohonanForm').addEventListener('submit', async function(ev){
     participantCount: $('participantCount').value
   };
 
-  // client-side date validation (again)
+  // client-side date validation
   const start = new Date(payload.travelStartDate);
   const today = new Date(); today.setHours(0,0,0,0);
   const min = new Date(today.getTime() + 30*24*60*60*1000);
   if (isNaN(start.getTime()) || start < min) {
-    alert('Tarikh mula mesti sekurang-kurangnya 30 hari dari hari ini.');
+    Swal.fire({ icon:'warning', title:'Tarikh tidak sah', text:'Tarikh mula mesti sekurang-kurangnya 30 hari dari hari ini.' });
     $('submitBtn').disabled = false;
     return;
   }
 
-  // Helper: tukar file ke base64
-  async function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve({
-        name: file.name,
-        type: file.type || 'application/pdf',
-        data: r.result.split(',')[1]
-      });
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
-  }
-
   showLoading();
   try {
+    // collect files and convert
     const fileMap = {
       kertasKerja: $('file_kertasKerja').files[0],
       maklumatAnggota: $('file_maklumatAnggota').files[0],
@@ -257,28 +300,57 @@ $('permohonanForm').addEventListener('submit', async function(ev){
       if (fileMap[key]) filesBase64[key] = await fileToBase64(fileMap[key]);
     }
 
-    // NOTE: do NOT set Content-Type header -> avoids preflight OPTIONS
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      // DO NOT set headers here (especially not application/json)
-      body: JSON.stringify({ payload, filesBase64 })
-    });
-
+    // send JSON body (do NOT set custom Content-Type header) to avoid preflight
+    const body = JSON.stringify({ type:'new', payload, filesBase64 });
+    const res = await fetch(GAS_URL, { method:'POST', body: body });
     const j = await res.json();
     hideLoading();
     if (j.ok) {
-      alert('Permohonan berjaya dihantar.\nNombor rujukan: ' + j.requestId);
+      Swal.fire({ icon:'success', title:'Berjaya', text: 'Permohonan berjaya dihantar. Nombor rujukan: ' + (j.requestId || '') });
       $('permohonanForm').reset();
       leaders = []; renderLeaders();
     } else {
-      alert('Gagal: ' + (j.message || j.error || JSON.stringify(j)));
+      Swal.fire({ icon:'error', title:'Gagal', text: j.message || j.error || JSON.stringify(j) });
     }
   } catch (err) {
     hideLoading();
-    // Likely CORS/preflight if Content-Type set; with this code it should work
-    alert('Ralat sambungan: ' + err.message);
+    Swal.fire({ icon:'error', title:'Ralat sambungan', text: err.message });
   } finally {
     $('submitBtn').disabled = false;
+  }
+});
+
+/* ========== Submit Query Response (sekolah tanpa login) ========== */
+$('submitQueryResp').addEventListener('click', async function(){
+  const qid = $('queryIdInput').value.trim();
+  if (!qid) return Swal.fire({ icon:'warning', title:'Sila isi Query ID' });
+  showLoading();
+  try {
+    const fileMap = {
+      kertasKerja: $('q_file_kertasKerja').files[0],
+      maklumatAnggota: $('q_file_maklumatAnggota').files[0],
+      permitBas: $('q_file_permitBas').files[0],
+      lesenPemandu: $('q_file_lesenPemandu').files[0],
+      taklimat: $('q_file_taklimat').files[0]
+    };
+    const filesBase64 = {};
+    for (const k in fileMap) if (fileMap[k]) filesBase64[k] = await fileToBase64(fileMap[k]);
+
+    const payload = { queryId: qid, schoolEmail: $('querySchoolEmail').value.trim() };
+    const body = JSON.stringify({ type:'queryResponse', payload, filesBase64 });
+    const res = await fetch(GAS_URL, { method:'POST', body: body });
+    const j = await res.json();
+    hideLoading();
+    if (j.ok) {
+      Swal.fire({ icon:'success', title:'Berjaya', text: 'Balasan Query diterima.' });
+      $('queryIdInput').value=''; $('querySchoolEmail').value='';
+      ['q_file_kertasKerja','q_file_maklumatAnggota','q_file_permitBas','q_file_lesenPemandu','q_file_taklimat'].forEach(id=>{ const el=$(id); if (el) el.value=''; });
+    } else {
+      Swal.fire({ icon:'error', title:'Gagal', text: j.message || JSON.stringify(j) });
+    }
+  } catch (err) {
+    hideLoading();
+    Swal.fire({ icon:'error', title:'Ralat', text: err.message });
   }
 });
 
@@ -287,92 +359,110 @@ $('tabPermohonan').addEventListener('click', ()=>{ $('permohonanSection').classL
 $('tabSemakan').addEventListener('click', ()=>{ $('permohonanSection').classList.add('hidden'); $('semakanSection').classList.remove('hidden'); $('kelulusanSection').classList.add('hidden'); });
 $('tabKelulusan').addEventListener('click', ()=>{ $('permohonanSection').classList.add('hidden'); $('semakanSection').classList.add('hidden'); $('kelulusanSection').classList.remove('hidden'); });
 
-/* ========== Pegawai: login & senarai ========== */
+/* ========== Pegawai: login & load list ========== */
 let officerSecret = null;
 $('loginOfficer').addEventListener('click', async ()=>{
   const pw = prompt('Masukkan kata laluan Pegawai:');
   if (!pw) return;
-  const check = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
-  const cj = await check.json();
-  if (cj.ok) { officerSecret = pw; alert('Berjaya login sebagai pegawai.'); loadRequests(); } else alert('Kata laluan salah.');
+  try {
+    const check = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
+    const cj = await check.json();
+    if (cj.ok) { officerSecret = pw; Swal.fire('Berjaya','Berjaya login sebagai pegawai','success'); loadRequests(); } else Swal.fire('Gagal','Kata laluan salah','error');
+  } catch (err) { Swal.fire('Ralat', err.message,'error'); }
 });
 
 async function loadRequests(){
-  if (!officerSecret) return alert('Sila log masuk dahulu.');
-  const res = await fetch(GAS_URL + '?action=listRequests&secret=' + encodeURIComponent(officerSecret));
-  const j = await res.json();
-  if (!j.ok) return alert('Gagal memuat permohonan: ' + (j.message||''));
-  const requests = j.requests;
-  const table = document.createElement('table'); table.className='w-full text-sm';
-  table.innerHTML = `<thead><tr class="bg-gray-100">
-    <th class="p-2">ID</th><th>Nama Sekolah</th><th>Tarikh</th><th>Status</th><th>Tindakan</th></tr></thead>`;
-  const tb = document.createElement('tbody');
-  for (const req of requests) {
-    const filter = $('filterCategory').value;
-    if (filter && req['Category'] !== filter) continue;
-    const tr = document.createElement('tr'); tr.className='border-b';
-    tr.innerHTML = `<td class="p-2">${req['Request ID']}</td>
-      <td>${req['School Name'] || ''}</td>
-      <td>${req['Travel Start'] || ''}</td>
-      <td>${req['Status'] || ''}</td>`;
-    const td = document.createElement('td'); td.className='p-2';
+  if (!officerSecret) return Swal.fire('Sila log masuk dahulu');
+  try {
+    const res = await fetch(GAS_URL + '?action=listRequests&secret=' + encodeURIComponent(officerSecret));
+    const j = await res.json();
+    if (!j.ok) return Swal.fire('Gagal', j.message || JSON.stringify(j),'error');
+    const requests = j.requests;
+    const table = document.createElement('table'); table.className='w-full text-sm';
+    table.innerHTML = `<thead><tr class="bg-gray-100"><th class="p-2">ID</th><th>Nama Sekolah</th><th>Tarikh</th><th>Status</th><th>Tindakan</th></tr></thead>`;
+    const tb = document.createElement('tbody');
+    for (const req of requests) {
+      const filter = $('filterCategory').value;
+      if (filter && req['Category'] !== filter) continue;
+      const tr = document.createElement('tr'); tr.className='border-b';
+      tr.innerHTML = `<td class="p-2">${req['Request ID']}</td><td>${req['School Name'] || ''}</td><td>${req['Travel Start'] || ''}</td><td>${req['Status'] || ''}</td>`;
+      const td = document.createElement('td'); td.className='p-2';
 
-    const viewBtn = document.createElement('button'); 
-    viewBtn.className='px-2 py-1 border rounded mr-2'; 
-    viewBtn.textContent='LIHAT FAIL';
-    viewBtn.addEventListener('click', ()=> {
-      if (req['File_KERTAS_KERJA']) window.open(req['File_KERTAS_KERJA'],'_blank'); 
-      else alert('Tiada fail kertas kerja.');
-    });
-
-    const queryBtn = document.createElement('button'); 
-    queryBtn.className='px-2 py-1 bg-yellow-400 rounded mr-2'; 
-    queryBtn.textContent='Query';
-    queryBtn.addEventListener('click', ()=> {
-      const note = prompt('Catatan (kenapa query):');
-      if (note) sendOfficerAction(req['Request ID'], 'query', note);
-    });
-
-    const preapproveBtn = document.createElement('button'); 
-    preapproveBtn.className='px-2 py-1 bg-green-600 text-white rounded'; 
-    preapproveBtn.textContent='Lulus (Jana Surat)';
-    preapproveBtn.addEventListener('click', ()=> {
-      const noJilid = prompt('No Jilid Surat:');
-      const bilSurat = prompt('Bil Surat (angka):', '1');
-      const tarikhSurat = prompt('Tarikh Surat (YYYY-MM-DD):', new Date().toISOString().slice(0,10));
-      if (noJilid && bilSurat && tarikhSurat) {
-        sendOfficerAction(req['Request ID'],'preapprove','', 'Menengah').then(()=>{
-          fetch(GAS_URL + '?action=generateLetters&id=' + encodeURIComponent(req['Request ID']) + 
-                '&secret=' + encodeURIComponent(officerSecret) + 
-                '&noJilid=' + encodeURIComponent(noJilid) + 
-                '&bilSurat=' + encodeURIComponent(bilSurat) + 
-                '&tarikhSurat=' + encodeURIComponent(tarikhSurat))
-            .then(r=>r.json()).then(j2=>{
-              if (j2.ok) { alert('Surat dijana.'); loadRequests(); } 
-              else alert('Gagal jana surat: ' + (j2.message||JSON.stringify(j2)));
-            });
+      // View all files button
+      const viewBtn = document.createElement('button');
+      viewBtn.className='px-2 py-1 border rounded mr-2';
+      viewBtn.textContent='LIHAT FAIL';
+      viewBtn.addEventListener('click', ()=> {
+        // collect known file columns
+        const keys = ['File_KERTAS_KERJA','File_MAKLUMAT_ANGGOTA','File_PERMIT_BAS','File_LESEN_PEMANDU','File_TAKLIMAT'];
+        const lines = [];
+        keys.forEach(k=>{
+          const v = req[k];
+          if (v) {
+            const parts = v.toString().split(/\s*;\s*/).filter(Boolean);
+            parts.forEach((p,idx)=> lines.push({label:k + (parts.length>1?(' #'+(idx+1)):''), url:p}));
+          }
         });
-      }
-    });
+        if (lines.length===0) return Swal.fire('Tiada fail','Tiada fail dilampirkan','info');
+        // show modal with links (SweetAlert)
+        let html = '<ul style="text-align:left;">';
+        lines.forEach(ln=>{
+          html += `<li style="margin:6px 0;"><a href="${ln.url}" target="_blank" rel="noopener">${ln.label}</a></li>`;
+        });
+        html += '</ul>';
+        Swal.fire({ title: `Fail untuk ${req['Request ID']}`, html: html, width:800 });
+      });
 
-    td.appendChild(viewBtn); td.appendChild(queryBtn); td.appendChild(preapproveBtn);
-    tr.appendChild(td);
-    tb.appendChild(tr);
+      // Query button
+      const queryBtn = document.createElement('button');
+      queryBtn.className='px-2 py-1 bg-yellow-400 rounded mr-2';
+      queryBtn.textContent='Query';
+      queryBtn.addEventListener('click', async ()=> {
+        const note = prompt('Catatan (kenapa query):');
+        if (!note) return;
+        const ok = await sendOfficerAction(req['Request ID'], 'query', note);
+        if (ok) Swal.fire('Berjaya','Permohonan ditandakan sebagai QUERY dan e-mel dihantar','success');
+      });
+
+      // Preapprove (generate letters)
+      const preapproveBtn = document.createElement('button');
+      preapproveBtn.className='px-2 py-1 bg-green-600 text-white rounded';
+      preapproveBtn.textContent='Lulus (Jana Surat)';
+      preapproveBtn.addEventListener('click', async ()=> {
+        const noJilid = prompt('No Jilid Surat:');
+        const bilSurat = prompt('Bil Surat (angka):', '1');
+        const tarikhSurat = prompt('Tarikh Surat (YYYY-MM-DD):', new Date().toISOString().slice(0,10));
+        if (!noJilid || !bilSurat || !tarikhSurat) return;
+        const ok = await sendOfficerAction(req['Request ID'],'preapprove','', 'Menengah');
+        if (!ok) return;
+        // call generateLetters
+        try {
+          const r2 = await fetch(GAS_URL + '?action=generateLetters&id=' + encodeURIComponent(req['Request ID']) + '&secret=' + encodeURIComponent(officerSecret) + '&noJilid=' + encodeURIComponent(noJilid) + '&bilSurat=' + encodeURIComponent(bilSurat) + '&tarikhSurat=' + encodeURIComponent(tarikhSurat));
+          const j2 = await r2.json();
+          if (j2.ok) { Swal.fire('Berjaya','Surat dijana','success'); loadRequests(); }
+          else Swal.fire('Gagal jana surat', j2.message || JSON.stringify(j2),'error');
+        } catch (err) { Swal.fire('Ralat', err.message,'error'); }
+      });
+
+      td.appendChild(viewBtn); td.appendChild(queryBtn); td.appendChild(preapproveBtn);
+      tr.appendChild(td);
+      tb.appendChild(tr);
+    }
+    table.appendChild(tb);
+    $('requestsTable').innerHTML=''; $('requestsTable').appendChild(table);
+  } catch (err) {
+    Swal.fire('Ralat', err.message,'error');
   }
-  table.appendChild(tb);
-  $('requestsTable').innerHTML=''; $('requestsTable').appendChild(table);
 }
 
+/* send officer action */
 async function sendOfficerAction(id, type, note='', pic='Menengah') {
-  const url = GAS_URL + '?action=officerAction&id=' + encodeURIComponent(id) + 
-              '&type=' + encodeURIComponent(type) + 
-              '&note=' + encodeURIComponent(note) + 
-              '&pic=' + encodeURIComponent(pic) + 
-              '&secret=' + encodeURIComponent(officerSecret);
-  const r = await fetch(url);
-  const j = await r.json();
-  if (j.ok) { alert('Berjaya: ' + j.message); loadRequests(); return true; } 
-  else { alert('Gagal: ' + (j.message||JSON.stringify(j))); return false; }
+  try {
+    const url = GAS_URL + '?action=officerAction&id=' + encodeURIComponent(id) + '&type=' + encodeURIComponent(type) + '&note=' + encodeURIComponent(note) + '&pic=' + encodeURIComponent(pic) + '&secret=' + encodeURIComponent(officerSecret);
+    const r = await fetch(url);
+    const j = await r.json();
+    if (j.ok) { loadRequests(); return true; } else { Swal.fire('Gagal', j.message || JSON.stringify(j),'error'); return false; }
+  } catch (err) { Swal.fire('Ralat', err.message,'error'); return false; }
 }
 
 /* ========== Timbalan ========== */
@@ -380,37 +470,41 @@ let dpSecret = null;
 $('loginDP').addEventListener('click', async ()=>{
   const pw = prompt('Masukkan kata laluan Timbalan:');
   if (!pw) return;
-  const res = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
-  const j = await res.json();
-  if (j.ok) { dpSecret = pw; alert('Berjaya login sebagai Timbalan'); loadDpList(); } 
-  else alert('Kata laluan salah.');
+  try {
+    const res = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
+    const j = await res.json();
+    if (j.ok) { dpSecret = pw; Swal.fire('Berjaya','Berjaya login sebagai Timbalan','success'); loadDpList(); } else Swal.fire('Gagal','Kata laluan salah','error');
+  } catch (err) { Swal.fire('Ralat', err.message,'error'); }
 });
 
 async function loadDpList(){
-  if (!dpSecret) return alert('Sila log masuk.');
-  const res = await fetch(GAS_URL + '?action=listRequests&secret=' + encodeURIComponent(dpSecret));
-  const j = await res.json();
-  if (!j.ok) return alert('Gagal fetch.');
-  const requests = j.requests.filter(r=> r['Status'] && (r['Status'].toString().indexOf('READY_FOR_DP')>-1 || r['Status']==='PREAPPROVED'));
-  const div = document.createElement('div');
-  requests.forEach(req=>{
-    const card = document.createElement('div'); card.className='border p-3 mb-2 rounded';
-    card.innerHTML = `<div class="font-semibold">${req['Request ID']} — ${req['School Name']}</div>
-                      <div class="text-sm">Status: ${req['Status']}</div>`;
-    const btn = document.createElement('button'); 
-    btn.className='mt-2 px-3 py-1 bg-green-600 text-white rounded'; 
-    btn.textContent='Diluluskan (Hantar Surat)';
-    btn.addEventListener('click', async ()=>{
-      if (!confirm('Sahkan hantar surat kelulusan kepada sekolah?')) return;
-      const r2 = await fetch(GAS_URL + '?action=finalApprove&id=' + encodeURIComponent(req['Request ID']) + '&secret=' + encodeURIComponent(dpSecret));
-      const j2 = await r2.json();
-      if (j2.ok) { alert('Emel dihantar.'); loadDpList(); } else alert('Gagal: ' + (j2.message||JSON.stringify(j2)));
+  if (!dpSecret) return Swal.fire('Sila log masuk.');
+  try {
+    const res = await fetch(GAS_URL + '?action=listRequests&secret=' + encodeURIComponent(dpSecret));
+    const j = await res.json();
+    if (!j.ok) return Swal.fire('Gagal', j.message || JSON.stringify(j),'error');
+    const requests = j.requests.filter(r=> r['Status'] && (r['Status'].toString().indexOf('READY_FOR_DP')>-1 || r['Status']==='PREAPPROVED'));
+    const div = document.createElement('div');
+    requests.forEach(req=>{
+      const card = document.createElement('div'); card.className='border p-3 mb-2 rounded';
+      card.innerHTML = `<div class="font-semibold">${req['Request ID']} — ${req['School Name']}</div><div class="text-sm">Status: ${req['Status']}</div>`;
+      const btn = document.createElement('button'); btn.className='mt-2 px-3 py-1 bg-green-600 text-white rounded'; btn.textContent='Diluluskan (Hantar Surat)';
+      btn.addEventListener('click', async ()=>{
+        if (!confirm('Sahkan hantar surat kelulusan kepada sekolah?')) return;
+        const r2 = await fetch(GAS_URL + '?action=finalApprove&id=' + encodeURIComponent(req['Request ID']) + '&secret=' + encodeURIComponent(dpSecret));
+        const j2 = await r2.json();
+        if (j2.ok) { Swal.fire('Berjaya','Emel dihantar','success'); loadDpList(); } else Swal.fire('Gagal', j2.message || JSON.stringify(j2),'error');
+      });
+      card.appendChild(btn);
+      div.appendChild(card);
     });
-    card.appendChild(btn);
-    div.appendChild(card);
-  });
-  $('dpRequestsTable').innerHTML=''; $('dpRequestsTable').appendChild(div);
+    $('dpRequestsTable').innerHTML=''; $('dpRequestsTable').appendChild(div);
+  } catch (err) { Swal.fire('Ralat', err.message,'error'); }
 }
+
+/* Filter category change should reload if logged */
+$('filterCategory').addEventListener('change', ()=>{ if (officerSecret) loadRequests(); });
+
 </script>
 </body>
 </html>
