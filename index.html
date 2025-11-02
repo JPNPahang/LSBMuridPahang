@@ -160,27 +160,49 @@ function $(id){ return document.getElementById(id); }
 function showLoading(){ $('loadingModal').classList.remove('hidden'); $('loadingModal').classList.add('flex'); }
 function hideLoading(){ $('loadingModal').classList.add('hidden'); $('loadingModal').classList.remove('flex'); }
 
-/* ========== Leaders dynamic ========== */
+/* ========== Set min date for travelStart ========== */
+(function setMinTravelDate(){
+  const el = $('travelStart');
+  if (!el) return;
+  const today = new Date();
+  const minDate = new Date(today.getTime() + 30*24*60*60*1000);
+  const yyyy = minDate.getFullYear();
+  const mm = String(minDate.getMonth()+1).padStart(2,'0');
+  const dd = String(minDate.getDate()).padStart(2,'0');
+  el.min = `${yyyy}-${mm}-${dd}`;
+})();
+
+/* ========== Leaders dynamic (name + phone) ========== */
 let leaders = [];
 function renderLeaders(){
   const container = $('leaderList'); container.innerHTML='';
-  if (leaders.length===0) leaders.push('');
-  leaders.forEach((l,i)=>{
+  if (leaders.length===0) leaders.push({name:'', phone:''});
+  leaders.forEach((obj,i)=>{
     const div = document.createElement('div'); div.className='flex gap-2';
     div.innerHTML = `
-      <input class="flex-1 border p-2 rounded leaderInput" value="${l}" data-index="${i}" placeholder="Nama Ketua ${i+1}" />
+      <input class="flex-1 border p-2 rounded leaderName" placeholder="Nama Ketua ${i+1}" data-index="${i}" value="${obj.name || ''}" />
+      <input class="w-40 border p-2 rounded leaderPhone" placeholder="No. Tel" data-index="${i}" value="${obj.phone || ''}" />
       <button type="button" data-index="${i}" class="removeLead bg-red-500 text-white px-2 rounded">X</button>`;
     container.appendChild(div);
   });
-  container.querySelectorAll('.removeLead').forEach(btn=>btn.addEventListener('click', (ev)=>{ const i=ev.target.dataset.index; leaders.splice(i,1); renderLeaders(); }));
-  container.querySelectorAll('.leaderInput').forEach(inp=>inp.addEventListener('input', (ev)=>{ const i=ev.target.dataset.index; leaders[i]=ev.target.value; }));
+  container.querySelectorAll('.removeLead').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ const i=parseInt(ev.target.dataset.index); leaders.splice(i,1); renderLeaders(); });
+  });
+  container.querySelectorAll('.leaderName').forEach(inp=>{
+    inp.addEventListener('input', (ev)=>{ const i=parseInt(ev.target.dataset.index); leaders[i].name = ev.target.value; });
+  });
+  container.querySelectorAll('.leaderPhone').forEach(inp=>{
+    inp.addEventListener('input', (ev)=>{ const i=parseInt(ev.target.dataset.index); leaders[i].phone = ev.target.value; });
+  });
 }
-$('addLeader').addEventListener('click', ()=>{ leaders.push(''); renderLeaders(); });
+$('addLeader').addEventListener('click', ()=>{ leaders.push({name:'', phone:''}); renderLeaders(); });
 renderLeaders();
 
-/* ========== Permohonan: hantar sebagai JSON (base64) ========== */
+/* ========== Permohonan: hantar sebagai JSON (base64) WITHOUT content-type header ========== */
 $('permohonanForm').addEventListener('submit', async function(ev){
   ev.preventDefault();
+  // disable submit
+  $('submitBtn').disabled = true;
 
   const payload = {
     schoolCode: $('schoolCode').value.trim(),
@@ -189,20 +211,21 @@ $('permohonanForm').addEventListener('submit', async function(ev){
     category: $('category').value,
     travelStartDate: $('travelStart').value,
     travelEndDate: $('travelEnd').value,
-    leaderNames: leaders.filter(Boolean),
-    leaderPhones: [], // boleh ditambah jika perlu
+    leaderNames: leaders.map(l=>l.name).filter(Boolean),
+    leaderPhones: leaders.map(l=>l.phone).filter(Boolean),
     vehicleCount: $('vehicleCount').value,
     placeVisit: $('placeVisit').value,
     accommodation: $('accommodation').value,
     participantCount: $('participantCount').value
   };
 
-  // Validasi tarikh client-side
+  // client-side date validation (again)
   const start = new Date(payload.travelStartDate);
   const today = new Date(); today.setHours(0,0,0,0);
   const min = new Date(today.getTime() + 30*24*60*60*1000);
   if (isNaN(start.getTime()) || start < min) {
     alert('Tarikh mula mesti sekurang-kurangnya 30 hari dari hari ini.');
+    $('submitBtn').disabled = false;
     return;
   }
 
@@ -220,26 +243,27 @@ $('permohonanForm').addEventListener('submit', async function(ev){
     });
   }
 
-  // Ambil fail-fail
-  const filesBase64 = {};
-  const fileMap = {
-    kertasKerja: $('file_kertasKerja').files[0],
-    maklumatAnggota: $('file_maklumatAnggota').files[0],
-    permitBas: $('file_permitBas').files[0],
-    lesenPemandu: $('file_lesenPemandu').files[0],
-    taklimat: $('file_taklimat').files[0],
-  };
-  for (const key in fileMap) {
-    if (fileMap[key]) filesBase64[key] = await fileToBase64(fileMap[key]);
-  }
-
   showLoading();
   try {
+    const fileMap = {
+      kertasKerja: $('file_kertasKerja').files[0],
+      maklumatAnggota: $('file_maklumatAnggota').files[0],
+      permitBas: $('file_permitBas').files[0],
+      lesenPemandu: $('file_lesenPemandu').files[0],
+      taklimat: $('file_taklimat').files[0],
+    };
+    const filesBase64 = {};
+    for (const key in fileMap) {
+      if (fileMap[key]) filesBase64[key] = await fileToBase64(fileMap[key]);
+    }
+
+    // NOTE: do NOT set Content-Type header -> avoids preflight OPTIONS
     const res = await fetch(GAS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      // DO NOT set headers here (especially not application/json)
       body: JSON.stringify({ payload, filesBase64 })
     });
+
     const j = await res.json();
     hideLoading();
     if (j.ok) {
@@ -251,7 +275,10 @@ $('permohonanForm').addEventListener('submit', async function(ev){
     }
   } catch (err) {
     hideLoading();
+    // Likely CORS/preflight if Content-Type set; with this code it should work
     alert('Ralat sambungan: ' + err.message);
+  } finally {
+    $('submitBtn').disabled = false;
   }
 });
 
@@ -290,7 +317,6 @@ async function loadRequests(){
       <td>${req['Status'] || ''}</td>`;
     const td = document.createElement('td'); td.className='p-2';
 
-    // Lihat fail: Kertas Kerja (contoh)
     const viewBtn = document.createElement('button'); 
     viewBtn.className='px-2 py-1 border rounded mr-2'; 
     viewBtn.textContent='LIHAT FAIL';
@@ -299,7 +325,6 @@ async function loadRequests(){
       else alert('Tiada fail kertas kerja.');
     });
 
-    // Query
     const queryBtn = document.createElement('button'); 
     queryBtn.className='px-2 py-1 bg-yellow-400 rounded mr-2'; 
     queryBtn.textContent='Query';
@@ -308,7 +333,6 @@ async function loadRequests(){
       if (note) sendOfficerAction(req['Request ID'], 'query', note);
     });
 
-    // Lulus (Jana Surat)
     const preapproveBtn = document.createElement('button'); 
     preapproveBtn.className='px-2 py-1 bg-green-600 text-white rounded'; 
     preapproveBtn.textContent='Lulus (Jana Surat)';
@@ -331,9 +355,7 @@ async function loadRequests(){
       }
     });
 
-    td.appendChild(viewBtn); 
-    td.appendChild(queryBtn); 
-    td.appendChild(preapproveBtn);
+    td.appendChild(viewBtn); td.appendChild(queryBtn); td.appendChild(preapproveBtn);
     tr.appendChild(td);
     tb.appendChild(tr);
   }
