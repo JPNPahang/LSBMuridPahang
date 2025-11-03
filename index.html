@@ -108,23 +108,18 @@
         <h2 class="text-xl font-semibold mb-3">Semakan (Pegawai)</h2>
 
         <!-- Login row (separately) -->
-        <div class="mb-4 flex items-center gap-3">
+        <div class="mb-4">
           <button id="loginOfficer" class="px-4 py-2 bg-blue-600 text-white rounded">Log masuk Pegawai</button>
           <span id="officerLoggedAs" class="ml-3 text-sm text-gray-600"></span>
-
-          <!-- Search (kod/nama sekolah) -->
-          <div class="ml-auto flex items-center gap-2">
-            <input id="searchBox" class="border p-2 rounded text-sm" placeholder="Cari kod sekolah atau nama sekolah..." />
-            <button id="searchBtn" class="px-3 py-1 bg-blue-600 text-white rounded text-sm">Cari</button>
-            <button id="clearSearchBtn" class="px-3 py-1 bg-gray-200 rounded text-sm">Kosong</button>
-          </div>
         </div>
 
-        <!-- Filters (without PIC) -->
+        <!-- Filters (keadaan: usable tanpa mematikan login) -->
         <div class="flex gap-3 mb-4 items-center">
           <select id="filterCategory" class="border p-2 rounded">
             <option value="">Semua Kategori</option><option value="Menengah">Menengah</option><option value="Rendah">Rendah</option>
           </select>
+
+          <input id="quickSearch" class="border p-2 rounded" placeholder="Cari Kod Sek./Nama Sekolah" />
 
           <select id="filterStatus" class="border p-2 rounded">
             <option value="">Semua Status</option>
@@ -217,25 +212,10 @@ const $ = id => document.getElementById(id);
 function showLoading(){ $('loadingModal').classList.remove('hidden'); $('loadingModal').classList.add('flex'); }
 function hideLoading(){ $('loadingModal').classList.add('hidden'); $('loadingModal').classList.remove('flex'); }
 
-/* --- State --- */
-let requestsCache = []; // last fetched
-let officerSecret = null;
+/* --- NEW: cache for requests (keeps data fetched) --- */
+let requestsCache = []; // stores last fetched requests
+let officerSecret = null; // set on login
 let dpSecret = null;
-
-/* Helpers */
-function fmtDateToDisplay(isoOrRaw){
-  if (!isoOrRaw) return '';
-  const d = new Date(isoOrRaw);
-  if (isNaN(d.getTime())) {
-    const m = String(isoOrRaw).match(/(\d{4})-(\d{2})-(\d{2})/);
-    if (!m) return String(isoOrRaw);
-    return `${m[3]}-${m[2]}-${m[1]}`;
-  }
-  const dd = String(d.getDate()).padStart(2,'0');
-  const mm = String(d.getMonth()+1).padStart(2,'0');
-  const yyyy = d.getFullYear();
-  return `${dd}-${mm}-${yyyy}`;
-}
 
 /* Date bounds (start + max 4 days) */
 (function(){
@@ -312,53 +292,47 @@ $('permohonanForm').addEventListener('submit', async function(ev){
   finally{ $('submitBtn').disabled=false; }
 });
 
-/* Tabs with active class handling */
-function hideAllSections(){ ['introSection','formSection','officerSection','dpSection','queryResponseSection','downloadsSection'].forEach(id=>$(id).classList.add('hidden')); }
-function setActiveTab(btnId){
-  document.querySelectorAll('.nav-tab').forEach(b=>{ b.classList.remove('tab-active'); b.classList.remove('bg-blue-600'); b.classList.remove('text-white'); });
-  const el = $(btnId); if (el) el.classList.add('tab-active');
-}
+/* Tabs */
+function hideAllSections(){ ['introSection','formSection','officerSection','dpSection','queryResponseSection','downloadsSection'].forEach(id=>$(id).classList.add('hidden')); document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('tab-active')); }
 ['tabIntroBtn','tabFormBtn','tabOfficerBtn','tabDPBtn','tabQueryResponseBtn','tabDownloadsBtn'].forEach(id=>{
-  $(id).addEventListener('click',()=>{ hideAllSections(); const map={tabIntroBtn:'introSection',tabFormBtn:'formSection',tabOfficerBtn:'officerSection',tabDPBtn:'dpSection',tabQueryResponseBtn:'queryResponseSection',tabDownloadsBtn:'downloadsSection'}; $(map[id]).classList.remove('hidden'); setActiveTab(id); });
+  $(id).addEventListener('click',()=>{ hideAllSections(); const map={tabIntroBtn:'introSection',tabFormBtn:'formSection',tabOfficerBtn:'officerSection',tabDPBtn:'dpSection',tabQueryResponseBtn:'queryResponseSection',tabDownloadsBtn:'downloadsSection'}; $(map[id]).classList.remove('hidden'); $(id).classList.add('tab-active'); });
 });
-
-// default
-setActiveTab('tabFormBtn');
-$('formSection').classList.remove('hidden');
 
 /* Pegawai: login (separate) */
 $('loginOfficer').addEventListener('click', async ()=>{
   const { value: pw } = await Swal.fire({ title:'Log masuk Pegawai', input:'password', inputLabel:'Masukkan kata laluan Pegawai', showCancelButton:true, confirmButtonText:'Log masuk' });
   if (!pw) return;
   try {
-    showLoading();
     const check = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
     const cj = await check.json();
-    hideLoading();
     if (cj.ok) {
       officerSecret = pw;
       $('officerLoggedAs').textContent = ' (Disambungkan)';
       await loadRequests();
       Swal.fire({icon:'success',title:'Login Pegawai berjaya'});
     } else Swal.fire({icon:'error',title:'Kata laluan salah'});
-  } catch (err){ hideLoading(); Swal.fire({icon:'error',title:'Ralat sambungan',text:err.message||''}); }
+  } catch (err){ Swal.fire({icon:'error',title:'Ralat sambungan',text:err.message||''}); }
 });
 
-/* Filters control (no PIC) */
+/* Filters & search */
+function populateFilterOptions(requests){
+  const source = requests || requestsCache || [];
+  const pis = new Set();
+  source.forEach(r=>{ if (r['OfficerPIC']) pis.add(String(r['OfficerPIC']).trim()); });
+  const sel = $('filterPIC'); if (sel) { sel.innerHTML = '<option value="">Semua PIC</option>'; Array.from(pis).sort().forEach(p=>{ if (p){ const o=document.createElement('option'); o.value=p; o.text=p; sel.appendChild(o); }}); }
+}
+
 $('applyFilters').addEventListener('click', ()=> renderTablesFromCache());
-$('clearFilters').addEventListener('click', ()=>{ $('filterCategory').value=''; $('filterStatus').value=''; $('searchBox').value=''; renderTablesFromCache(); });
+$('clearFilters').addEventListener('click', ()=>{ $('filterCategory').value=''; $('filterStatus').value=''; if($('quickSearch')) $('quickSearch').value=''; renderTablesFromCache(); });
+if ($('quickSearch')) $('quickSearch').addEventListener('input', ()=> renderTablesFromCache());
 
-/* Search */
-$('searchBtn').addEventListener('click', ()=> renderTablesFromCache());
-$('clearSearchBtn').addEventListener('click', ()=>{ $('searchBox').value=''; renderTablesFromCache(); });
-
-/* Render helper: table generator */
+/* Render helper: small table generator */
 function makeTable(rows, cols){
   const t = document.createElement('table'); t.className='w-full text-sm';
   const thead = document.createElement('thead'); const trh = document.createElement('tr'); trh.className='bg-gray-100';
   cols.forEach(c=>{ const th=document.createElement('th'); th.className='p-2 text-left'; th.textContent=c; trh.appendChild(th); }); thead.appendChild(trh); t.appendChild(thead);
   const tb=document.createElement('tbody');
-  rows.forEach(r=>{ const tr=document.createElement('tr'); tr.className='border-b align-top';
+  rows.forEach(r=>{ const tr=document.createElement('tr'); tr.className='border-b';
     cols.forEach(c=>{ const td=document.createElement('td'); td.className='p-2 align-top'; td.innerHTML = r[c]||''; tr.appendChild(td); });
     tb.appendChild(tr);
   });
@@ -372,208 +346,100 @@ async function loadRequests(){
     return Swal.fire({icon:'warning',title:'Sila log masuk dahulu.'});
   }
   try {
-    showLoading();
     const res = await fetch(GAS_URL + '?action=listRequests&secret=' + encodeURIComponent(officerSecret));
     const j = await res.json();
-    hideLoading();
     if (!j.ok) return Swal.fire({icon:'error',title:'Gagal',text:j.message||''});
     const requests = j.requests || [];
     requestsCache = requests; // cache
+    populateFilterOptions(requestsCache);
     renderTablesFromCache();
-  } catch (err) { hideLoading(); Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); }
+  } catch (err) { Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); }
 }
 
-/* Utility: extract query history from a request (best-effort) */
-function extractQueries(req){
-  if (!req) return [];
-  if (Array.isArray(req['QueryHistory']) && req['QueryHistory'].length) {
-    return req['QueryHistory'].map(q=>({
-      id: q.id || q.QueryID || q.queryId || '',
-      sentDate: q.sentDate || q.sent_at || q.date || '',
-      respondedDate: q.respondedDate || q.responded_at || q.response_date || '',
-      note: q.note || q.note_text || q.message || ''
-    }));
-  }
-  const queries = [];
-  const txt = String(req['OfficerNote']||req['OfficerNotes']||'');
-  if (txt) {
-    const re = /QueryID[:\s]*([A-Z0-9\-_]+)/ig;
-    let m;
-    while ((m = re.exec(txt)) !== null) {
-      const id = m[1];
-      const slice = txt.slice(Math.max(0,m.index-120), m.index+120);
-      const dateMatch = slice.match(/(\d{4}-\d{2}-\d{2})/);
-      queries.push({ id, sentDate: dateMatch ? dateMatch[0] : '', respondedDate:'', note: slice.trim() });
-    }
-  }
-  if (req['QueryID'] && !queries.find(q=>q.id===req['QueryID'])) {
-    queries.push({ id: req['QueryID'], sentDate: req['QueryDate']||'', respondedDate: req['QueryRespondedDate']||'', note: req['OfficerNote']||'' });
-  }
-  return queries;
-}
-
-/* Render tables from requestsCache applying current filters and search */
+/* Render tables from requestsCache applying current filters */
 function renderTablesFromCache(){
   const requests = requestsCache || [];
-  const selCategory = $('filterCategory').value.trim();
-  const selStatus = $('filterStatus').value.trim();
-  const search = ($('searchBox').value || '').trim().toLowerCase();
+  const selCategory = $('filterCategory').value;
+  const selPIC = $('filterPIC') ? $('filterPIC').value : '';
+  const selStatus = $('filterStatus').value;
+  const quick = $('quickSearch') ? $('quickSearch').value.trim().toLowerCase() : '';
 
   const newRows = [], queryRows = [], approvedRows = [];
 
-  function matchesSearch(req){
-    if (!search) return true;
-    const code = String(req['School Code'] || req['SchoolCode'] || req['schoolCode'] || '').toLowerCase();
-    const name = String(req['School Name'] || req['SchoolName'] || req['schoolName'] || '').toLowerCase();
-    return code.includes(search) || name.includes(search);
-  }
-
   requests.forEach(req => {
     if (selCategory && String(req['Category']||req['category']||'') !== selCategory) return;
+    if (selPIC && String(req['OfficerPIC']||'') !== selPIC) return;
     if (selStatus && String(req['Status']||'') !== selStatus) return;
-    if (!matchesSearch(req)) return;
+    if (quick) {
+      const kc = String(req['School Code']||req['Kod Sekolah']||req['schoolCode']||'').toLowerCase();
+      const sn = String(req['School Name']||req['Sekolah']||'').toLowerCase();
+      if (!(kc.indexOf(quick) > -1 || sn.indexOf(quick) > -1)) return;
+    }
 
     const id = req['Request ID'] || '';
-    const kodSek = req['School Code'] || req['SchoolCode'] || req['schoolCode'] || '';
-    const school = req['School Name'] || req['SchoolName'] || req['schoolName'] || '';
-
-    // derive leader info (best-effort)
-    const firstLeader = (() => {
-      if (req['LeaderNames'] && Array.isArray(req['LeaderNames']) && req['LeaderNames'][0]) {
-        const name = req['LeaderNames'][0];
-        const phone = (req['LeaderPhones'] && Array.isArray(req['LeaderPhones']) && req['LeaderPhones'][0]) ? req['LeaderPhones'][0] : '';
-        return `${name}${phone?(' — '+phone):''}`;
-      }
-      if (req['Leaders'] && Array.isArray(req['Leaders']) && req['Leaders'][0]) {
-        return `${req['Leaders'][0].name||''}${req['Leaders'][0].phone?(' — '+req['Leaders'][0].phone):''}`;
-      }
-      if (req['LeaderName'] || req['Leader'] ) {
-        const n = req['LeaderName'] || req['Leader'] || '';
-        const p = req['LeaderPhone'] || req['LeaderTel'] || '';
-        return `${n}${p?(' — '+p):''}`;
-      }
-      return '';
-    })();
-
-    const travelStart = req['Travel Start'] || req['TravelStart'] || req['travelStart'] || '';
+    const schoolCode = req['School Code'] || req['Kod Sekolah'] || '';
+    const school = req['School Name'] || req['Sekolah'] || '';
+    const leaders = (req['LeaderNames'] && Array.isArray(req['LeaderNames'])) ? req['LeaderNames'] : (()=>{ try { return JSON.parse(req['LeaderNames']||'[]'); } catch(e){ return []; } })();
+    const leaderName = leaders[0]||'';
+    const leaderPhones = (req['LeaderPhones'] && Array.isArray(req['LeaderPhones'])) ? req['LeaderPhones'] : (()=>{ try { return JSON.parse(req['LeaderPhones']||'[]'); } catch(e){ return []; } })();
+    const leaderPhone = leaderPhones[0]||'';
+    const category = req['Category'] || req['kategori'] || req['Kategori'] || '';
+    const dateRaw = req['Travel Start'] || req['TravelStart'] || req['Tarikh'] || '';
+    const date = formatDateDMY(dateRaw);
     const status = req['Status'] || '';
     const noSurat = req['NoSuratFull'] || (req['Letters'] ? `Surat dijana (${String(req['Letters']).split(/\s*;\s*/).filter(Boolean).length})` : (req['OfficerNote'] && (String(req['OfficerNote']).match(/QueryID:([A-Z0-9\-\_]+)/i) || [])[1] ? `Query: ${(String(req['OfficerNote']).match(/QueryID:([A-Z0-9\-\_]+)/i)||[])[1]}` : '-'));
 
-    // single "Lihat Fail" + other actions
-    const actionsGeneric = `<div class="flex gap-2">
-        <button data-id="${id}" class="view-files px-2 py-1 border rounded text-xs">Lihat Fail</button>
-      </div>`;
-    const actionsWithOfficerBtns = `<div class="flex gap-2">
-        <button data-id="${id}" class="view-files px-2 py-1 border rounded text-xs">Lihat Fail</button>
-        <button data-id="${id}" class="btn-query px-2 py-1 bg-yellow-400 rounded text-xs">Query</button>
-        <button data-id="${id}" class="btn-preapprove px-2 py-1 bg-green-600 text-white rounded text-xs">Lulus (Jana Surat)</button>
+    // Files single button only
+    const actions = `<div class="flex gap-2">
+        <button data-id="${id}" class="view-files px-2 py-1 border rounded">LIHAT FAIL</button>
+        <button data-id="${id}" class="btn-query px-2 py-1 bg-yellow-400 rounded">Query</button>
+        <button data-id="${id}" class="btn-preapprove px-2 py-1 bg-green-600 text-white rounded">Lulus (Jana Surat)</button>
       </div>`;
 
-    if (String(status).indexOf('QUERY') > -1) {
-      const queries = extractQueries(req);
-      if (queries.length === 0) {
-        const qRow = {
-          'Kod Sekolah': kodSek,
-          'Nama Sekolah': school,
-          'Kategori': req['Category'] || req['category'] || '',
-          'Tarikh Query': fmtDateToDisplay(req['QueryDate']||req['Query Sent']||req['QuerySent']||req['QueryCreated']||''),
-          'Tarikh Respon': fmtDateToDisplay(req['QueryRespondedDate']||req['QueryResponseDate']||''),
-          'Catatan Query': (req['OfficerNote']||req['OfficerNotes']||''),
-          'Kod Query': req['QueryID'] || '',
-          'Status': status,
-          'Surat': noSurat,
-          'Tindakan': actionsWithOfficerBtns
-        };
-        queryRows.push(qRow);
-      } else {
-        queries.forEach(q=>{
-          queryRows.push({
-            'Kod Sekolah': kodSek,
-            'Nama Sekolah': school,
-            'Kategori': req['Category'] || req['category'] || '',
-            'Tarikh Query': fmtDateToDisplay(q.sentDate),
-            'Tarikh Respon': fmtDateToDisplay(q.respondedDate),
-            'Catatan Query': q.note || '',
-            'Kod Query': q.id || '',
-            'Status': status,
-            'Surat': noSurat,
-            'Tindakan': actionsWithOfficerBtns
-          });
-        });
-      }
-    } else if (String(status).indexOf('FINAL_APPROVED')>-1 || String(status).indexOf('READY_FOR_DP')>-1 || String(status).indexOf('PREAPPROVED')>-1) {
-      // approved group -> only Lihat Fail (no query/lulus buttons)
-      const letterDate = req['LetterDate'] || req['TarikhSurat'] || req['DateApproved'] || req['ApprovedDate'] || '';
-      const letterUrls = String(req['Letters']||'').split(/\s*;\s*/).filter(Boolean);
-      const letterLink = letterUrls.length ? `<a href="${letterUrls[0]}" target="_blank" class="text-blue-600 underline">Muat Turun</a>` : '';
-      approvedRows.push({
-        'Kod Sekolah': kodSek,
-        'Nama Sekolah': school,
-        'Kategori': req['Category'] || req['category'] || '',
-        'Tarikh Surat Lulus': fmtDateToDisplay(letterDate || req['GeneratedDate'] || req['NoSuratDate'] || ''),
-        'Link Surat': letterLink,
-        'Status': status,
-        'Surat': noSurat,
-        'Tindakan': actionsGeneric
-      });
-    } else {
-      newRows.push({
-        'Kod Sekolah': kodSek,
-        'Nama Sekolah': school,
-        'Kategori': req['Category'] || req['category'] || '',
-        'Tarikh': fmtDateToDisplay(travelStart),
-        'Nama Ketua & No Tel': firstLeader || '',
-        'Status': status,
-        'Surat': noSurat,
-        'Tindakan': actionsWithOfficerBtns
-      });
-    }
+    // Build rows per table requirement
+    const rowNew = { 'ID': id, 'Kod Sekolah': schoolCode, 'Sekolah': school, 'Kategori': category, 'Ketua Rombongan': `${leaderName} / ${leaderPhone}`, 'Tarikh': date, 'Status': status, 'Surat': noSurat, 'Tindakan': actions };
+    const querySentDate = formatDateDMY(req['QuerySentDate'] || req['Query Sent Date'] || req['Tarikh Query'] || req['QueryDate'] || '');
+    const queryRespDate = formatDateDMY(req['QueryRespondDate'] || req['Query Respond Date'] || req['Tarikh Respon'] || req['QueryRespDate'] || '');
+    const note = req['OfficerNote'] || '';
+
+    const rowQuery = { 'ID': id, 'Kod Sekolah': schoolCode, 'Sekolah': school, 'Kategori': category, 'Tarikh Query': querySentDate, 'Tarikh Respon': queryRespDate, 'Catatan': note, 'Status': status, 'Surat': noSurat, 'Tindakan': `<div class="flex gap-2"><button data-id="${id}" class="view-files px-2 py-1 border rounded">LIHAT FAIL</button></div>` };
+
+    const letterUrls = String(req['Letters']||'').split(/\s*;\s*/).filter(Boolean);
+    const letterLinkHtml = letterUrls.length ? `<a href="${letterUrls[0]}" target="_blank" class="underline">Muat Turun</a>` : '-';
+    const rowApproved = { 'ID': id, 'Kod Sekolah': schoolCode, 'Sekolah': school, 'Kategori': category, 'Tarikh Surat Lulus': formatDateDMY(req['LetterDate'] || req['Tarikh Surat'] || req['TarikhLulus'] || ''), 'Fail Surat': letterLinkHtml, 'Status': status, 'Surat': noSurat, 'Tindakan': `<button data-id="${id}" class="view-files px-2 py-1 border rounded">LIHAT FAIL</button>` };
+
+    if (String(status).indexOf('QUERY') > -1) queryRows.push(rowQuery);
+    else if (String(status).indexOf('FINAL_APPROVED') > -1 || String(status).indexOf('READY_FOR_DP') > -1 || String(status).indexOf('PREAPPROVED') > -1) approvedRows.push(rowApproved);
+    else newRows.push(rowNew);
   });
 
-  // Sort approvedRows by Tarikh Surat Lulus descending
-  approvedRows.sort((a,b)=>{
-    const pa = a['Tarikh Surat Lulus'] ? a['Tarikh Surat Lulus'].split('-').reverse().join('-') : '';
-    const pb = b['Tarikh Surat Lulus'] ? b['Tarikh Surat Lulus'].split('-').reverse().join('-') : '';
-    return pb.localeCompare(pa);
+  // sort approved latest first (by Tarikh Surat Lulus if available)
+  approvedRows.sort((a,b)=> {
+    const da = parseDMY(a['Tarikh Surat Lulus']); const db = parseDMY(b['Tarikh Surat Lulus']);
+    return (db - da);
   });
 
-  $('tableNew').innerHTML = '';
-  $('tableQuery').innerHTML = '';
-  $('tableApproved').innerHTML = '';
+  const colsNew = ['ID','Kod Sekolah','Sekolah','Kategori','Ketua Rombongan','Tarikh','Status','Surat','Tindakan'];
+  const colsQuery = ['ID','Kod Sekolah','Sekolah','Kategori','Tarikh Query','Tarikh Respon','Catatan','Status','Surat','Tindakan'];
+  const colsApp = ['ID','Kod Sekolah','Sekolah','Kategori','Tarikh Surat Lulus','Fail Surat','Status','Surat','Tindakan'];
 
-  if (newRows.length === 0) {
-    $('tableNew').innerHTML = `<p class="p-4 text-gray-500 italic">Tiada permohonan baru sepadan.</p>`;
-  } else {
-    const colsNew = ['Kod Sekolah','Nama Sekolah','Nama Ketua & No Tel','Kategori','Tarikh','Status','Surat','Tindakan'];
-    $('tableNew').appendChild(makeTable(newRows, colsNew));
-  }
+  $('tableNew').innerHTML = ''; $('tableQuery').innerHTML = ''; $('tableApproved').innerHTML = '';
+  $('tableNew').appendChild(makeTable(newRows, colsNew));
+  $('tableQuery').appendChild(makeTable(queryRows, colsQuery));
+  $('tableApproved').appendChild(makeTable(approvedRows, colsApp));
 
-  if (queryRows.length === 0) {
-    $('tableQuery').innerHTML = `<p class="p-4 text-gray-500 italic">Tiada permohonan dalam status query.</p>`;
-  } else {
-    const colsQuery = ['Kod Sekolah','Nama Sekolah','Kategori','Tarikh Query','Tarikh Respon','Kod Query','Catatan Query','Status','Surat','Tindakan'];
-    $('tableQuery').appendChild(makeTable(queryRows, colsQuery));
-  }
-
-  if (approvedRows.length === 0) {
-    $('tableApproved').innerHTML = `<p class="p-4 text-gray-500 italic">Tiada permohonan yang telah diluluskan.</p>`;
-  } else {
-    const colsApp = ['Kod Sekolah','Nama Sekolah','Kategori','Tarikh Surat Lulus','Link Surat','Status','Surat','Tindakan'];
-    $('tableApproved').appendChild(makeTable(approvedRows, colsApp));
-  }
-
-  // Wire up action buttons (view-files, query, preapprove) after render
+  // wire buttons
   document.querySelectorAll('.view-files').forEach(btn=>{
     btn.addEventListener('click', (ev)=>{
       const id = ev.currentTarget.dataset.id;
-      const req = (requestsCache || []).find(r => String(r['Request ID']) === String(id));
+      const req = requests.find(r => String(r['Request ID']) === String(id));
       if (!req) return Swal.fire({ icon:'error', title:'Tidak jumpa rekod' });
       const files = [
-        {label:'KERTAS KERJA', url: req['File_KERTAS_KERJA'] || req['kertasKerjaUrl'] || ''},
-        {label:'MAKLUMAT ANGGOTA', url: req['File_MAKLUMAT_ANGGOTA'] || req['maklumatAnggotaUrl'] || ''},
-        {label:'PERMIT BAS', url: req['File_PERMIT_BAS'] || req['permitBasUrl'] || ''},
-        {label:'LESEN PEMANDU', url: req['File_LESEN_PEMANDU'] || req['lesenPemanduUrl'] || ''},
-        {label:'INTIPATI TAKLIMAT', url: req['File_TAKLIMAT'] || req['taklimatUrl'] || ''}
+        {label:'KERTAS KERJA', url: req['File_KERTAS_KERJA']},
+        {label:'MAKLUMAT ANGGOTA', url: req['File_MAKLUMAT_ANGGOTA']},
+        {label:'PERMIT BAS', url: req['File_PERMIT_BAS']},
+        {label:'LESEN PEMANDU', url: req['File_LESEN_PEMANDU']},
+        {label:'INTIPATI TAKLIMAT', url: req['File_TAKLIMAT']}
       ];
       const html = files.map(f => f.url ? `<p><strong>${f.label}:</strong> <a href="${f.url}" target="_blank">Buka</a></p>` : `<p><strong>${f.label}:</strong> <em>Tiada fail</em></p>`).join('');
       Swal.fire({ title:'Fail Permohonan', html, width:700, showCloseButton:true, confirmButtonText:'Tutup' });
@@ -585,7 +451,7 @@ function renderTablesFromCache(){
       const id = ev.currentTarget.dataset.id;
       const { value: note } = await Swal.fire({ title:'Catatan (kenapa query):', input:'textarea', inputPlaceholder:'Tulis sebab...', showCancelButton:true, confirmButtonText:'Hantar Query' });
       if (!note) return;
-      await sendOfficerAction(id,'query', note, 'Menengah');
+      await sendOfficerAction(id,'query', note, $('filterPIC') ? $('filterPIC').value || 'Menengah' : 'Menengah');
     });
   });
 
@@ -621,14 +487,12 @@ function renderTablesFromCache(){
 /* sendOfficerAction */
 async function sendOfficerAction(id,type,note='',pic='Menengah'){
   if (!officerSecret) return Swal.fire({icon:'warning',title:'Sila log masuk sebagai Pegawai untuk tindakan ini.'});
-  showLoading();
   const url = GAS_URL + '?action=officerAction&id=' + encodeURIComponent(id) + '&type=' + encodeURIComponent(type) + '&note=' + encodeURIComponent(note) + '&pic=' + encodeURIComponent(pic) + '&secret=' + encodeURIComponent(officerSecret);
   try {
     const r = await fetch(url); const j = await r.json();
-    hideLoading();
     if (j.ok){ await Swal.fire({icon:'success',title:'Berjaya',text:j.message}); await loadRequests(); return true; }
     else { await Swal.fire({icon:'error',title:'Gagal',text:j.message||JSON.stringify(j)}); return false; }
-  } catch (err){ hideLoading(); Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); return false; }
+  } catch (err){ Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); return false; }
 }
 
 /* Timbalan login */
@@ -636,11 +500,10 @@ $('loginDP').addEventListener('click', async ()=>{
   const { value: pw } = await Swal.fire({ title:'Log masuk Timbalan', input:'password', showCancelButton:true, confirmButtonText:'Log masuk' });
   if (!pw) return;
   try {
-    showLoading();
     const res = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
-    const j = await res.json(); hideLoading();
+    const j = await res.json();
     if (j.ok) { dpSecret = pw; Swal.fire({icon:'success',title:'Login Timbalan berjaya'}); loadDpList(); } else Swal.fire({icon:'error',title:'Kata laluan salah'});
-  } catch (err){ hideLoading(); Swal.fire({icon:'error',title:'Ralat sambungan',text:err.message||''}); }
+  } catch (err){ Swal.fire({icon:'error',title:'Ralat sambungan',text:err.message||''}); }
 });
 
 async function loadDpList(){
@@ -650,7 +513,6 @@ async function loadDpList(){
     const j = await res.json(); if (!j.ok) return Swal.fire({icon:'error',title:'Gagal fetch.'});
     const requests = j.requests.filter(r=> r['Status'] && (String(r['Status']).indexOf('READY_FOR_DP')>-1 || r['Status']==='PREAPPROVED'));
     const div = document.createElement('div');
-    if (requests.length === 0) div.innerHTML = `<p class="text-gray-500 italic">Tiada permohonan sedia untuk kelulusan akhir.</p>`;
     requests.forEach(req=>{ const card=document.createElement('div'); card.className='border p-3 mb-2 rounded'; card.innerHTML=`<div class="font-semibold">${req['Request ID']} — ${req['School Name']}</div><div class="text-sm">Status: ${req['Status']}</div>`; const btn=document.createElement('button'); btn.className='mt-2 px-3 py-1 bg-green-600 text-white rounded'; btn.textContent='Diluluskan (Hantar Surat)'; btn.addEventListener('click',async ()=>{ if(!confirm('Sahkan hantar surat kelulusan kepada sekolah?')) return; showLoading(); const r2=await fetch(GAS_URL + '?action=finalApprove&id=' + encodeURIComponent(req['Request ID']) + '&secret=' + encodeURIComponent(dpSecret)); const j2=await r2.json(); hideLoading(); if(j2.ok){ Swal.fire({icon:'success',title:'Emel dihantar.'}); loadDpList(); } else Swal.fire({icon:'error',title:'Gagal',text:j2.message||JSON.stringify(j2)}); }); card.appendChild(btn); div.appendChild(card); });
     $('dpRequestsTable').innerHTML=''; $('dpRequestsTable').appendChild(div);
   } catch (err){ Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); }
@@ -678,75 +540,58 @@ $('sendQueryResponseBtn').addEventListener('click', async ()=>{
 
     if (j.ok){
       // Success — attempt to merge with local cache if server provided updated info
-      // Priority 1: server returns updatedRequest (full object)
-      // Priority 2: server returns requestId and files (object of urls)
       if (j.updatedRequest && j.updatedRequest['Request ID']){
         const updated = j.updatedRequest;
-        // find and replace by Request ID
         const idx = requestsCache.findIndex(x => String(x['Request ID']) === String(updated['Request ID']));
         if (idx > -1) requestsCache[idx] = Object.assign({}, requestsCache[idx], updated);
         else requestsCache.unshift(updated);
-        // ensure status becomes QUERY_RESPONDED (or server-provided)
         requestsCache[idx > -1 ? idx : 0]['Status'] = updated['Status'] || 'QUERY_RESPONDED';
         Swal.fire({icon:'success',title:'Respon query diterima',text:'Fail digabungkan dengan permohonan sedia ada.'});
         renderTablesFromCache();
       } else if (j.requestId){
-        // server returned requestId and maybe files map
         const rid = j.requestId;
-        const files = j.files || {}; // expect keys like kertasKerja => url
+        const files = j.files || {};
         const idx = requestsCache.findIndex(x => String(x['Request ID']) === String(rid));
-        if (idx > -1) {
-          const target = requestsCache[idx];
-          // merge file urls into request object
-          Object.keys(files).forEach(k=>{
-            // store in same key naming as backend uses if possible
-            const mapKey = {
-              kertasKerja: 'File_KERTAS_KERJA',
-              maklumatAnggota: 'File_MAKLUMAT_ANGGOTA',
-              permitBas: 'File_PERMIT_BAS',
-              lesenPemandu: 'File_LESEN_PEMANDU',
-              taklimat: 'File_TAKLIMAT'
-            }[k] || k;
-            target[mapKey] = files[k];
-          });
-          // set status to QUERY_RESPONDED (or server-provided)
-          target['Status'] = j.status || 'QUERY_RESPONDED';
-          Swal.fire({icon:'success',title:'Respon query diterima',text:'Fail digabungkan dengan permohonan sedia ada.'});
+        if (idx > -1){
+          // merge file URLs into sheet fields locally
+          const rObj = requestsCache[idx];
+          const map = { kertasKerja:'File_KERTAS_KERJA', maklumatAnggota:'File_MAKLUMAT_ANGGOTA', permitBas:'File_PERMIT_BAS', lesenPemandu:'File_LESEN_PEMANDU', taklimat:'File_TAKLIMAT' };
+          for (const k in files){ const h = map[k]; if (!h) continue; const existing = rObj[h] || ''; rObj[h] = existing ? (existing + ' ; ' + files[k]) : files[k]; }
+          rObj['Status'] = rObj['Status'] || 'QUERY_RESPONDED';
+          Swal.fire({icon:'success',title:'Respon query diterima',text:'Fail digabungkan.'});
           renderTablesFromCache();
         } else {
-          // not in cache: optionally fetch fresh list (only if officer logged in)
-          if (officerSecret) {
-            await loadRequests();
-            Swal.fire({icon:'success',title:'Respon dihantar',text:'Data dikemaskini daripada pelayan.'});
-          } else {
-            Swal.fire({icon:'success',title:'Respon dihantar',text:'Respon diterima — pegawai akan melihat kemas kini apabila mereka menyegarkan senarai.'});
-          }
+          // if not found, request server to refresh (best-effort)
+          await loadRequests();
+          Swal.fire({icon:'success',title:'Respon query diterima',text:'Data dimuat semula.'});
         }
       } else {
-        // No structured data returned. Best-effort: ask to refresh (handled gracefully)
-        if (officerSecret) {
-          await loadRequests();
-          Swal.fire({icon:'success',title:'Respon diterima',text:'Data dikemaskini daripada pelayan.'});
-        } else {
-          Swal.fire({icon:'success',title:'Respon diterima',text:'Respon diterima — pegawai akan melihat kemas kini apabila mereka menyegarkan senarai.'});
-        }
+        Swal.fire({icon:'success',title:'Respon query diterima'});
       }
-
-      // clear form
-      $('respQueryId').value=''; $('respSchoolEmail').value='';
-      ['resp_file_kertasKerja','resp_file_maklumatAnggota','resp_file_permitBas','resp_file_lesenPemandu','resp_file_taklimat'].forEach(id=>{ if($(id)) $(id).value=''; });
-    } else {
-      Swal.fire({icon:'error',title:'Gagal',text:j.message||JSON.stringify(j)});
-    }
-  } catch (err){
-    hideLoading();
-    Swal.fire({icon:'error',title:'Ralat',text:err.message||''});
-  }
+    } else Swal.fire({icon:'error',title:'Gagal',text:j.message||JSON.stringify(j)});
+  } catch (err){ hideLoading(); Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); }
 });
 
-
-// Initial render: if any cached data exist, render
-renderTablesFromCache();
+/* Helpers: date formatting DMY and parsing */
+function formatDateDMY(v){
+  if (!v) return '';
+  // handle Date object or ISO string
+  try {
+    const d = new Date(v);
+    if (!isNaN(d.getTime())) {
+      const dd = String(d.getDate()).padStart(2,'0'); const mm = String(d.getMonth()+1).padStart(2,'0'); const yy = d.getFullYear();
+      return `${dd}-${mm}-${yy}`;
+    }
+  } catch(e){}
+  // fallback if already DMY-like
+  return String(v);
+}
+function parseDMY(s){
+  if (!s) return 0;
+  const m = String(s).match(/(\d{2})-(\d{2})-(\d{4})/);
+  if (m) return new Date(`${m[3]}-${m[2]}-${m[1]}`).getTime();
+  const d = new Date(s); return isNaN(d.getTime())?0:d.getTime();
+}
 
 </script>
 
