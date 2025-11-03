@@ -5,283 +5,283 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>LAWATAN MURID — e-SPA JPN Pahang</title>
 
-  <!-- Tailwind -->
+  <!-- Tailwind (CDN) -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 
-  <!-- SweetAlert2 for nice modals -->
+  <!-- SweetAlert2 for nicer alerts -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <style>
-    body { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
-    /* Sidebar fixed layout */
-    .sidebar { width: 260px; min-height: 100vh; position: fixed; left:0; top:0; background:#16222A; color:white; padding:28px 18px; }
-    .content { margin-left:260px; padding:28px; background:#f3f4f6; min-height:100vh; }
-    .nav-btn { display:flex; align-items:center; gap:.75rem; padding:10px 14px; border-radius:8px; cursor:pointer; color:#cfe8ff; }
-    .nav-btn.active { background:#1f6feb; color:white; box-shadow:0 6px 18px rgba(31,111,235,0.12); }
-    .card { background:white; border-radius:12px; padding:20px; box-shadow:0 6px 18px rgba(7,7,7,0.06); }
-    .small-muted { font-size:.9rem; color:#6b7280; }
-    /* responsive */
-    @media (max-width:900px){ .sidebar{position:static;width:100%;} .content{margin-left:0;} }
+    /* sidebar */
+    .sidebar { background:#1f2937; color:#fff; min-height:100vh; }
+    .sidebar a { color: #cbd5e1; }
+    .sidebar .active { background:#0f172a; color:#fff; }
+    /* modal backdrops with tailwind utility not always consistent on older tailwind -> ensure z-index */
+    #filesModal { z-index: 60; }
+    /* small tweaks */
+    .btn-ghost { background: transparent; border: 1px solid transparent; }
   </style>
 </head>
-<body>
+<body class="bg-gray-100 text-gray-800">
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="mb-6">
-      <!-- imej2: logo JPN kecil (ganti URL) -->
-      <img id="logoJPN" src="IMAGE2_URL" alt="Logo JPN" style="max-width:120px; display:block; margin-bottom:14px;">
-      <h2 style="font-size:20px; font-weight:700; margin-bottom:2px;">LAWATAN MURID</h2>
-      <div class="small-muted">e-SPA Lawatan — JPN Pahang</div>
-    </div>
-
-    <nav class="mt-6 space-y-2">
-      <div id="navIntro" class="nav-btn active">📘 Pengenalan</div>
-      <div id="navForm" class="nav-btn">📝 Borang Permohonan</div>
-      <div id="navOfficer" class="nav-btn">🔎 Semakan (Pegawai)</div>
-      <div id="navDP" class="nav-btn">✅ Kelulusan (Timbalan)</div>
-      <div id="navRespond" class="nav-btn">📤 Tindak Balas Query</div>
-      <div id="navDownloads" class="nav-btn">⬇️ Muat Turun</div>
-    </nav>
-
-    <div style="position:absolute; bottom:28px; left:18px; right:18px;" class="small-muted">
-      Versi: 1.0 • Dibangunkan untuk JPN Pahang
-    </div>
-  </aside>
-
-  <!-- CONTENT -->
-  <main class="content">
-    <!-- header image (image1) -->
-    <div style="margin-bottom:18px;">
-      <img id="headerImage" src="IMAGE1_URL" alt="Header" style="width:100%; max-height:160px; object-fit:cover; border-radius:12px;">
-    </div>
-
-    <!-- PENGENALAN -->
-    <section id="sectionIntro" class="card">
-      <h1 class="text-2xl font-bold mb-2">Selamat Datang ke Portal LAWATAN MURID</h1>
-      <p class="small-muted mb-4">Portal ini memudahkan sekolah menghantar permohonan lawatan, pegawai menilai, dan Timbalan Pengarah meluluskan serta menjana surat kelulusan.</p>
-
-      <h3 class="font-semibold">Apa sistem ini lakukan</h3>
-      <ul class="list-disc pl-6 mt-2 small-muted">
-        <li>Terima permohonan lawatan (borang + 5 fail PDF).</li>
-        <li>Pegawai boleh semak, buat query (minta fail tambahan) atau pra-lulus.</li>
-        <li>Timbalan boleh hantar surat kelulusan (PDF dijana automatik).</li>
-        <li>Sekolah boleh jawab query menggunakan <strong>Tindak Balas Query</strong> — masukkan Request ID & Query ID dari e-mel dan muat naik fail.</li>
-      </ul>
-    </section>
-
-    <!-- BORANG PERMOHONAN -->
-    <section id="sectionForm" class="card hidden mt-6">
-      <h2 class="text-xl font-semibold mb-2">Borang Permohonan</h2>
-      <form id="permohonanForm" class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm">Kod Sekolah</label>
-            <input id="schoolCode" class="w-full border p-2 rounded" required />
-          </div>
-          <div>
-            <label class="text-sm">Nama Sekolah</label>
-            <input id="schoolName" class="w-full border p-2 rounded" required />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm">Email Sekolah</label>
-            <input id="schoolEmail" type="email" class="w-full border p-2 rounded" required />
-          </div>
-          <div>
-            <label class="text-sm">Kategori</label>
-            <select id="category" class="w-full border p-2 rounded">
-              <option>Menengah</option>
-              <option>Rendah</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm">Tarikh Mula</label>
-            <input id="travelStart" type="date" class="w-full border p-2 rounded" required />
-            <div class="small-muted mt-1">Tarikh mesti sekurang-kurangnya 30 hari dari hari ini.</div>
-          </div>
-          <div>
-            <label class="text-sm">Tarikh Tamat</label>
-            <input id="travelEnd" type="date" class="w-full border p-2 rounded" required />
-          </div>
-        </div>
-
+  <div class="flex">
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 p-6">
+      <div class="flex items-center gap-3 mb-6">
+        <img src="IMAGE2.png" alt="Logo JPN" class="w-12 h-12 object-contain">
         <div>
-          <label class="text-sm">Nama Ketua Rombongan & No. Tel (boleh tambah lebih dari satu)</label>
-          <div id="leaderList" class="space-y-2 mt-2"></div>
-          <button type="button" id="addLeader" class="mt-2 px-3 py-1 bg-blue-600 text-white rounded">Tambah Ketua</button>
+          <div class="text-xl font-bold">LAWATAN MURID</div>
+          <div class="text-xs text-gray-300">e-SPA Lawatan — JPN Pahang</div>
         </div>
+      </div>
 
-        <div class="grid grid-cols-2 gap-4">
+      <nav class="space-y-2">
+        <button id="tabIntroBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800">Pengenalan</button>
+        <button id="tabFormBtn" class="w-full text-left px-4 py-2 rounded bg-blue-600 text-white">Borang Permohonan</button>
+        <button id="tabOfficerBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800">Semakan (Pegawai)</button>
+        <button id="tabDPBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800">Kelulusan (Timbalan)</button>
+        <button id="tabQueryResponseBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800">Tindak Balas Query</button>
+        <button id="tabDownloadsBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800">Muat Turun</button>
+      </nav>
+
+      <div class="mt-8 text-xs text-gray-400">
+        Versi: 1.0 • Dibangunkan untuk JPN Pahang
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 p-8">
+      <!-- header image -->
+      <div class="mb-6">
+        <img src="IMAGE1.png" alt="Header" class="w-full rounded-lg shadow-sm object-cover" style="max-height:140px;">
+      </div>
+
+      <!-- Intro -->
+      <section id="introSection" class="bg-white p-6 rounded shadow mb-6">
+        <h2 class="text-2xl font-semibold mb-2">Selamat Datang ke Portal LAWATAN MURID</h2>
+        <p class="text-gray-700">Portal ini membolehkan sekolah menghantar permohonan lawatan murid, pegawai menyemak, dan Timbalan membuat kelulusan. Gunakan tab di sebelah kiri untuk navigasi.</p>
+      </section>
+
+      <!-- Form Section -->
+      <section id="formSection" class="bg-white p-6 rounded shadow mb-6">
+        <h2 class="text-xl font-semibold mb-4">Borang Permohonan</h2>
+        <form id="permohonanForm" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm">Kod Sekolah</label>
+              <input id="schoolCode" name="schoolCode" class="w-full border p-2 rounded" required />
+            </div>
+            <div>
+              <label class="block text-sm">Nama Sekolah</label>
+              <input id="schoolName" name="schoolName" class="w-full border p-2 rounded" required />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm">Email Sekolah</label>
+              <input id="schoolEmail" name="schoolEmail" type="email" class="w-full border p-2 rounded" required />
+            </div>
+            <div>
+              <label class="block text-sm">Kategori</label>
+              <select id="category" name="category" class="w-full border p-2 rounded">
+                <option>Menengah</option>
+                <option>Rendah</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm">Tarikh Mula</label>
+              <input id="travelStart" name="travelStart" type="date" class="w-full border p-2 rounded" required />
+              <p class="text-xs text-gray-500 mt-1">Tarikh mesti sekurang-kurangnya 30 hari dari hari ini.</p>
+            </div>
+            <div>
+              <label class="block text-sm">Tarikh Tamat</label>
+              <input id="travelEnd" name="travelEnd" type="date" class="w-full border p-2 rounded" required />
+            </div>
+          </div>
+
+          <!-- Leaders dynamic -->
           <div>
-            <label class="text-sm">Bilangan Kenderaan</label>
-            <input id="vehicleCount" type="number" min="1" value="1" class="w-full border p-2 rounded" required />
+            <label class="block text-sm">Nama Ketua Rombongan (boleh tambah lebih dari satu)</label>
+            <div id="leaderList" class="space-y-2 mt-2"></div>
+            <button type="button" id="addLeader" class="mt-2 px-3 py-1 bg-blue-600 text-white rounded">Tambah Ketua</button>
           </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm">Bilangan Kenderaan</label>
+              <input id="vehicleCount" name="vehicleCount" type="number" min="1" class="w-full border p-2 rounded" value="1" required />
+            </div>
+            <div>
+              <label class="block text-sm">Jumlah Ahli</label>
+              <input id="participantCount" name="participantCount" type="number" min="1" class="w-full border p-2 rounded" required />
+            </div>
+          </div>
+
           <div>
-            <label class="text-sm">Jumlah Ahli</label>
-            <input id="participantCount" type="number" min="1" class="w-full border p-2 rounded" required />
+            <label class="block text-sm">Tempat Pelancongan</label>
+            <input id="placeVisit" name="placeVisit" class="w-full border p-2 rounded" required />
           </div>
-        </div>
 
-        <div>
-          <label class="text-sm">Tempat Pelancongan</label>
-          <input id="placeVisit" class="w-full border p-2 rounded" required />
-        </div>
-
-        <div>
-          <label class="text-sm">Alamat Penginapan</label>
-          <input id="accommodation" class="w-full border p-2 rounded" />
-        </div>
-
-        <div>
-          <label class="text-sm font-medium">Muat Naik Fail (PDF) — ikut kategori (5 fail)</label>
-          <div class="grid grid-cols-2 gap-3 mt-2">
-            <div><label class="text-sm">KERTAS KERJA</label><input type="file" id="file_kertasKerja" accept="application/pdf" /></div>
-            <div><label class="text-sm">MAKLUMAT ANGGOTA</label><input type="file" id="file_maklumatAnggota" accept="application/pdf" /></div>
-            <div><label class="text-sm">PERMIT BAS</label><input type="file" id="file_permitBas" accept="application/pdf" /></div>
-            <div><label class="text-sm">LESEN PEMANDU</label><input type="file" id="file_lesenPemandu" accept="application/pdf" /></div>
-            <div><label class="text-sm">INTIPATI TAKLIMAT</label><input type="file" id="file_taklimat" accept="application/pdf" /></div>
+          <div>
+            <label class="block text-sm">Alamat Penginapan</label>
+            <input id="accommodation" name="accommodation" class="w-full border p-2 rounded" />
           </div>
-        </div>
 
-        <div class="flex items-center gap-4">
-          <button id="submitBtn" class="px-4 py-2 bg-green-600 text-white rounded">Hantar Permohonan</button>
-          <div id="submitStatus" class="small-muted"></div>
-        </div>
-      </form>
-    </section>
+          <div>
+            <label class="block text-sm font-medium">Muat Naik Fail (PDF) — ikut kategori (5 fail)</label>
+            <div class="grid grid-cols-2 gap-3 mt-2">
+              <div>
+                <label class="text-sm">KERTAS KERJA</label>
+                <input type="file" id="file_kertasKerja" name="kertasKerja" accept="application/pdf" />
+              </div>
+              <div>
+                <label class="text-sm">MAKLUMAT ANGGOTA</label>
+                <input type="file" id="file_maklumatAnggota" name="maklumatAnggota" accept="application/pdf" />
+              </div>
+              <div>
+                <label class="text-sm">PERMIT BAS</label>
+                <input type="file" id="file_permitBas" name="permitBas" accept="application/pdf" />
+              </div>
+              <div>
+                <label class="text-sm">LESEN PEMANDU</label>
+                <input type="file" id="file_lesenPemandu" name="lesenPemandu" accept="application/pdf" />
+              </div>
+              <div class="col-span-2">
+                <label class="text-sm">INTIPATI TAKLIMAT</label>
+                <input type="file" id="file_taklimat" name="taklimat" accept="application/pdf" />
+              </div>
+            </div>
+          </div>
 
-    <!-- SEMAKAN (Pegawai) -->
-    <section id="sectionOfficer" class="card hidden mt-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">Semakan (Pegawai)</h2>
-        <div>
-          <button id="loginOfficer" class="px-3 py-1 bg-blue-600 text-white rounded">Log masuk Pegawai</button>
-          <select id="filterCategory" class="border p-2 rounded ml-2">
+          <div class="flex gap-3">
+            <button id="submitBtn" class="px-4 py-2 bg-green-600 text-white rounded">Hantar Permohonan</button>
+            <div id="submitStatus" class="self-center text-sm text-gray-600"></div>
+          </div>
+        </form>
+      </section>
+
+      <!-- Officer section -->
+      <section id="officerSection" class="hidden bg-white p-6 rounded shadow mb-6">
+        <h2 class="text-xl font-semibold mb-3">Semakan (Pegawai)</h2>
+        <div class="flex gap-3 mb-3">
+          <button id="loginOfficer" class="px-4 py-2 bg-blue-600 text-white rounded">Log masuk Pegawai</button>
+          <select id="filterCategory" class="border p-2 rounded">
             <option value="">Semua Kategori</option>
             <option value="Menengah">Menengah</option>
             <option value="Rendah">Rendah</option>
           </select>
         </div>
-      </div>
-      <div id="requestsTable" class="overflow-auto"></div>
-    </section>
 
-    <!-- KELULUSAN (Timbalan) -->
-    <section id="sectionDP" class="card hidden mt-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">Kelulusan (Timbalan)</h2>
-        <div><button id="loginDP" class="px-3 py-1 bg-blue-600 text-white rounded">Log masuk Timbalan</button></div>
-      </div>
-      <div id="dpRequestsTable"></div>
-    </section>
+        <div id="requestsTable" class="overflow-auto max-h-96"></div>
+      </section>
 
-    <!-- TINDAK BALAS QUERY (SEKOLAH) -->
-    <section id="sectionRespond" class="card hidden mt-6">
-      <h2 class="text-xl font-semibold mb-2">Tindak Balas Query</h2>
-      <p class="small-muted">Masukkan Request ID dan Query ID (dari e-mel) untuk muat naik fail jawapan.</p>
-      <form id="respondForm" class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
-          <div><label class="text-sm">Request ID</label><input id="respRequestId" class="w-full border p-2 rounded" required /></div>
-          <div><label class="text-sm">Query ID</label><input id="respQueryId" class="w-full border p-2 rounded" required /></div>
-        </div>
-
+      <!-- DP section -->
+      <section id="dpSection" class="hidden bg-white p-6 rounded shadow mb-6">
+        <h2 class="text-xl font-semibold mb-3">Kelulusan (Timbalan)</h2>
         <div>
-          <label class="text-sm font-medium">Muat Naik Fail (PDF)</label>
-          <div class="grid grid-cols-2 gap-3 mt-2">
-            <div><label class="text-sm">KERTAS KERJA</label><input type="file" id="resp_file_kertasKerja" accept="application/pdf" /></div>
-            <div><label class="text-sm">MAKLUMAT ANGGOTA</label><input type="file" id="resp_file_maklumatAnggota" accept="application/pdf" /></div>
-            <div><label class="text-sm">PERMIT BAS</label><input type="file" id="resp_file_permitBas" accept="application/pdf" /></div>
-            <div><label class="text-sm">LESEN PEMANDU</label><input type="file" id="resp_file_lesenPemandu" accept="application/pdf" /></div>
-            <div><label class="text-sm">INTIPATI TAKLIMAT</label><input type="file" id="resp_file_taklimat" accept="application/pdf" /></div>
+          <button id="loginDP" class="px-4 py-2 bg-blue-600 text-white rounded">Log masuk Timbalan</button>
+        </div>
+        <div id="dpRequestsTable" class="mt-4"></div>
+      </section>
+
+      <!-- Query response (sekolah upload response to query without login) -->
+      <section id="queryResponseSection" class="hidden bg-white p-6 rounded shadow mb-6">
+        <h2 class="text-xl font-semibold mb-3">Balas Query (Sekolah)</h2>
+        <p class="text-gray-700 mb-3">Jika sekolah terima email Query (mengandungi Query ID), gunakan borang di bawah untuk muat naik fail yang diminta tanpa perlu login.</p>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-sm">Query ID</label>
+            <input id="respQueryId" class="w-full border p-2 rounded" placeholder="Contoh: QRY-1762..." />
+          </div>
+          <div>
+            <label class="block text-sm">Email Sekolah (untuk notifikasi)</label>
+            <input id="respSchoolEmail" class="w-full border p-2 rounded" placeholder="sekolah@example.com" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Muat Naik Fail (untuk Query)</label>
+            <div class="grid grid-cols-2 gap-3 mt-2">
+              <div>
+                <label class="text-sm">KERTAS KERJA</label>
+                <input type="file" id="resp_file_kertasKerja" accept="application/pdf" />
+              </div>
+              <div>
+                <label class="text-sm">MAKLUMAT ANGGOTA</label>
+                <input type="file" id="resp_file_maklumatAnggota" accept="application/pdf" />
+              </div>
+              <div>
+                <label class="text-sm">PERMIT BAS</label>
+                <input type="file" id="resp_file_permitBas" accept="application/pdf" />
+              </div>
+              <div>
+                <label class="text-sm">LESEN PEMANDU</label>
+                <input type="file" id="resp_file_lesenPemandu" accept="application/pdf" />
+              </div>
+              <div class="col-span-2">
+                <label class="text-sm">INTIPATI TAKLIMAT</label>
+                <input type="file" id="resp_file_taklimat" accept="application/pdf" />
+              </div>
+            </div>
+          </div>
+          <div>
+            <button id="sendQueryResponseBtn" class="px-4 py-2 bg-green-600 text-white rounded">Hantar Respon Query</button>
           </div>
         </div>
+      </section>
 
-        <div class="flex items-center gap-4">
-          <button id="respSubmitBtn" class="px-4 py-2 bg-indigo-600 text-white rounded">Hantar Tindak Balas Query</button>
-          <div id="respStatus" class="small-muted"></div>
+      <!-- Downloads -->
+      <section id="downloadsSection" class="hidden bg-white p-6 rounded shadow mb-6">
+        <h2 class="text-xl font-semibold mb-3">Muat Turun</h2>
+        <p class="text-gray-700 mb-3">Sila klik butang di bawah untuk memuat turun bahan.</p>
+        <div class="space-x-2">
+          <!-- Replace hrefs with real URLs -->
+          <a href="#" class="inline-block px-4 py-2 bg-blue-600 text-white rounded">Bahan 1</a>
+          <a href="#" class="inline-block px-4 py-2 bg-blue-600 text-white rounded">Bahan 2</a>
+          <a href="#" class="inline-block px-4 py-2 bg-blue-600 text-white rounded">Bahan 3</a>
         </div>
-      </form>
-    </section>
+      </section>
 
-    <!-- MUAT TURUN -->
-    <section id="sectionDownloads" class="card hidden mt-6">
-      <h2 class="text-xl font-semibold mb-2">Muat Turun</h2>
-      <p class="small-muted">Butang muat turun / bahan rujukan. Tampal URL anda di dalam kod (rujuk bahagian DOWNLOAD_LINKS di bawah).</p>
-      <div id="downloadsList" class="space-y-2 mt-4">
-        <!-- Buttons akan dijana dari array DOWNLOAD_LINKS -->
+    </main>
+  </div>
+
+  <!-- Modal: files -->
+  <div id="filesModal" class="fixed inset-0 hidden items-center justify-center bg-black bg-opacity-40">
+    <div class="bg-white rounded shadow-lg w-11/12 md:w-2/3 lg:w-1/2 p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 id="filesModalTitle" class="text-lg font-semibold">Fail Permohonan</h3>
+        <button id="filesModalClose" class="text-gray-500 hover:text-gray-800">Tutup ✕</button>
       </div>
-    </section>
-  </main>
-
-  <!-- LOADING OVERLAY -->
-  <div id="loadingModal" class="fixed inset-0 hidden items-center justify-center" style="background:rgba(0,0,0,0.35); z-index:50;">
-    <div class="bg-white p-6 rounded shadow">Sila tunggu — proses sedang dijalankan...</div>
+      <div id="filesList" class="space-y-3 text-sm max-h-72 overflow-auto"></div>
+      <div class="mt-4 text-right">
+        <button id="filesModalClose2" class="px-4 py-2 bg-gray-200 rounded">Tutup</button>
+      </div>
+    </div>
   </div>
 
 <script>
-/* ========== CONFIG ========== */
-/* GANTI dengan URL web app anda (Apps Script deployed URL) */
+/* ==================== CONFIG ==================== */
+/* Gantikan URL ini jika perlu (web app yang dideploy di Apps Script). */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbx_B7hzQrDtlks5fAynamk1s143zUvCxVWEQwfeNC3-BmKCAR9CZ27Sqml7qhIWZN3O/exec';
+/* ================================================= */
 
-/* DOWNLOAD BUTTONS (sesuaikan URL anda di sini) */
-const DOWNLOAD_LINKS = [
-  { label: 'Manual Pengguna (PDF)', url: 'https://example.com/manual.pdf' },
-  { label: 'Template Surat (DOCX)', url: 'https://example.com/template.docx' },
-  { label: 'SOP JPN', url: 'https://example.com/sop.pdf' }
-];
-/* ================================================== */
+function $ (id) { return document.getElementById(id); }
 
-function $(id){ return document.getElementById(id); }
-function showLoading(){ $('loadingModal').classList.remove('hidden'); $('loadingModal').classList.add('flex'); }
-function hideLoading(){ $('loadingModal').classList.add('hidden'); $('loadingModal').classList.remove('flex'); }
-
-/* ===== navigation ===== */
-const sections = {
-  intro: $('sectionIntro'),
-  form: $('sectionForm'),
-  officer: $('sectionOfficer'),
-  dp: $('sectionDP'),
-  respond: $('sectionRespond'),
-  downloads: $('sectionDownloads')
-};
-function setActive(tab){
-  // nav buttons
-  ['navIntro','navForm','navOfficer','navDP','navRespond','navDownloads'].forEach(id=> document.getElementById(id).classList.remove('active'));
-  $('navIntro').classList.remove('active'); // reset
-  // hide sections
-  Object.values(sections).forEach(s=> s.classList.add('hidden'));
-  if (tab==='intro') { $('navIntro').classList.add('active'); sections.intro.classList.remove('hidden'); }
-  if (tab==='form') { $('navForm').classList.add('active'); sections.form.classList.remove('hidden'); }
-  if (tab==='officer') { $('navOfficer').classList.add('active'); sections.officer.classList.remove('hidden'); loadRequests(); }
-  if (tab==='dp') { $('navDP').classList.add('active'); sections.dp.classList.remove('hidden'); loadDpList(); }
-  if (tab==='respond') { $('navRespond').classList.add('active'); sections.respond.classList.remove('hidden'); }
-  if (tab==='downloads') { $('navDownloads').classList.add('active'); sections.downloads.classList.remove('hidden'); renderDownloads(); }
+/* ---------- UI: tabs ---------- */
+function showSection(sectionId) {
+  ['introSection','formSection','officerSection','dpSection','queryResponseSection','downloadsSection']
+    .forEach(id => { const el = $(id); if (!el) return; if (id === sectionId) el.classList.remove('hidden'); else el.classList.add('hidden'); });
 }
-document.getElementById('navIntro').addEventListener('click', ()=> setActive('intro'));
-document.getElementById('navForm').addEventListener('click', ()=> setActive('form'));
-document.getElementById('navOfficer').addEventListener('click', ()=> setActive('officer'));
-document.getElementById('navDP').addEventListener('click', ()=> setActive('dp'));
-document.getElementById('navRespond').addEventListener('click', ()=> setActive('respond'));
-document.getElementById('navDownloads').addEventListener('click', ()=> setActive('downloads'));
+$('tabIntroBtn').addEventListener('click', ()=> showSection('introSection'));
+$('tabFormBtn').addEventListener('click', ()=> showSection('formSection'));
+$('tabOfficerBtn').addEventListener('click', ()=> showSection('officerSection'));
+$('tabDPBtn').addEventListener('click', ()=> showSection('dpSection'));
+$('tabQueryResponseBtn').addEventListener('click', ()=> showSection('queryResponseSection'));
+$('tabDownloadsBtn').addEventListener('click', ()=> showSection('downloadsSection'));
 
-/* ===== render downloads ===== */
-function renderDownloads(){
-  const cont = $('downloadsList'); cont.innerHTML='';
-  DOWNLOAD_LINKS.forEach(d=>{
-    const btn = document.createElement('a'); btn.href = d.url; btn.target='_blank';
-    btn.className='px-4 py-2 bg-gray-100 rounded inline-block';
-    btn.textContent = d.label;
-    cont.appendChild(btn);
-  });
-}
-
-/* ===== set min date for travelStart (>= 30 days) ===== */
+/* ========== Set min date for travelStart ========== */
 (function setMinTravelDate(){
   const el = $('travelStart');
   if (!el) return;
@@ -293,68 +293,76 @@ function renderDownloads(){
   el.min = `${yyyy}-${mm}-${dd}`;
 })();
 
-/* ===== leaders dynamic (name + phone) ===== */
+/* ========== Leaders dynamic (name + phone) ========== */
 let leaders = [];
 function renderLeaders(){
   const container = $('leaderList'); container.innerHTML='';
   if (leaders.length===0) leaders.push({name:'', phone:''});
   leaders.forEach((obj,i)=>{
-    const div = document.createElement('div'); div.className='flex gap-2 items-center';
+    const div = document.createElement('div'); div.className='flex gap-2';
     div.innerHTML = `
-      <input class="flex-1 border p-2 rounded leaderName" placeholder="Nama Ketua ${i+1}" data-index="${i}" value="${obj.name||''}" />
-      <input class="w-40 border p-2 rounded leaderPhone" placeholder="No. Tel" data-index="${i}" value="${obj.phone||''}" />
-      <button type="button" data-index="${i}" class="removeLead bg-red-500 text-white px-2 rounded">X</button>
-    `;
+      <input class="flex-1 border p-2 rounded leaderName" placeholder="Nama Ketua ${i+1}" data-index="${i}" value="${obj.name || ''}" />
+      <input class="w-40 border p-2 rounded leaderPhone" placeholder="No. Tel" data-index="${i}" value="${obj.phone || ''}" />
+      <button type="button" data-index="${i}" class="removeLead bg-red-500 text-white px-2 rounded">X</button>`;
     container.appendChild(div);
   });
-  container.querySelectorAll('.removeLead').forEach(btn=> btn.addEventListener('click', ev=>{ const i=parseInt(ev.target.dataset.index); leaders.splice(i,1); renderLeaders(); }));
-  container.querySelectorAll('.leaderName').forEach(inp=> inp.addEventListener('input', ev=>{ const i=parseInt(ev.target.dataset.index); leaders[i].name = ev.target.value; }));
-  container.querySelectorAll('.leaderPhone').forEach(inp=> inp.addEventListener('input', ev=>{ const i=parseInt(ev.target.dataset.index); leaders[i].phone = ev.target.value; }));
+  container.querySelectorAll('.removeLead').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ const i=parseInt(ev.target.dataset.index); leaders.splice(i,1); renderLeaders(); });
+  });
+  container.querySelectorAll('.leaderName').forEach(inp=>{
+    inp.addEventListener('input', (ev)=>{ const i=parseInt(ev.target.dataset.index); leaders[i].name = ev.target.value; });
+  });
+  container.querySelectorAll('.leaderPhone').forEach(inp=>{
+    inp.addEventListener('input', (ev)=>{ const i=parseInt(ev.target.dataset.index); leaders[i].phone = ev.target.value; });
+  });
 }
 $('addLeader').addEventListener('click', ()=>{ leaders.push({name:'', phone:''}); renderLeaders(); });
 renderLeaders();
 
-/* ===== helper: file to base64 ===== */
+/* ========== Helper: file -> base64 ========== */
 function fileToBase64(file) {
-  return new Promise((resolve,reject)=>{
+  return new Promise((resolve, reject) => {
     const r = new FileReader();
-    r.onload = ()=> resolve({ name: file.name, type: file.type || 'application/pdf', data: r.result.split(',')[1] });
+    r.onload = () => resolve({
+      name: file.name,
+      type: file.type || 'application/pdf',
+      data: r.result.split(',')[1]
+    });
     r.onerror = reject;
     r.readAsDataURL(file);
   });
 }
 
-/* ===== submit new permohonan ===== */
+/* ========== Permohonan submit ========== */
 $('permohonanForm').addEventListener('submit', async function(ev){
   ev.preventDefault();
   $('submitBtn').disabled = true;
+  const payload = {
+    schoolCode: $('schoolCode').value.trim(),
+    schoolName: $('schoolName').value.trim(),
+    schoolEmail: $('schoolEmail').value.trim(),
+    category: $('category').value,
+    travelStartDate: $('travelStart').value,
+    travelEndDate: $('travelEnd').value,
+    leaderNames: leaders.map(l=>l.name).filter(Boolean),
+    leaderPhones: leaders.map(l=>l.phone).filter(Boolean),
+    vehicleCount: $('vehicleCount').value,
+    placeVisit: $('placeVisit').value,
+    accommodation: $('accommodation').value,
+    participantCount: $('participantCount').value
+  };
+
+  // date check client-side
+  const start = new Date(payload.travelStartDate);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const min = new Date(today.getTime() + 30*24*60*60*1000);
+  if (isNaN(start.getTime()) || start < min) {
+    Swal.fire({icon:'error', title:'Tarikh tidak sah', text:'Tarikh mula mesti sekurang-kurangnya 30 hari dari hari ini.'});
+    $('submitBtn').disabled = false; return;
+  }
+
   showLoading();
   try {
-    const payload = {
-      schoolCode: $('schoolCode').value.trim(),
-      schoolName: $('schoolName').value.trim(),
-      schoolEmail: $('schoolEmail').value.trim(),
-      category: $('category').value,
-      travelStartDate: $('travelStart').value,
-      travelEndDate: $('travelEnd').value,
-      leaderNames: leaders.map(l=>l.name).filter(Boolean),
-      leaderPhones: leaders.map(l=>l.phone).filter(Boolean),
-      vehicleCount: $('vehicleCount').value,
-      placeVisit: $('placeVisit').value,
-      accommodation: $('accommodation').value,
-      participantCount: $('participantCount').value
-    };
-
-    // client date validation
-    const start = new Date(payload.travelStartDate);
-    const today = new Date(); today.setHours(0,0,0,0);
-    const min = new Date(today.getTime() + 30*24*60*60*1000);
-    if (isNaN(start.getTime()) || start < min) {
-      Swal.fire({ icon:'error', title:'Tarikh tidak sah', text:'Tarikh mula mesti sekurang-kurangnya 30 hari dari hari ini.'});
-      $('submitBtn').disabled=false; hideLoading(); return;
-    }
-
-    // gather files
     const fileMap = {
       kertasKerja: $('file_kertasKerja').files[0],
       maklumatAnggota: $('file_maklumatAnggota').files[0],
@@ -365,216 +373,243 @@ $('permohonanForm').addEventListener('submit', async function(ev){
     const filesBase64 = {};
     for (const k in fileMap) if (fileMap[k]) filesBase64[k] = await fileToBase64(fileMap[k]);
 
-    // send JSON body (type: 'new')
-    const res = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ type:'new', payload, filesBase64 }) });
+    // send JSON body (type 'new')
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ type:'new', payload, filesBase64 })
+    });
     const j = await res.json();
     hideLoading();
     if (j.ok) {
-      Swal.fire({ icon:'success', title:'Permohonan dihantar', text: 'Nombor rujukan: ' + j.requestId });
-      $('permohonanForm').reset(); leaders = []; renderLeaders();
+      Swal.fire({icon:'success', title:'Permohonan berjaya dihantar', html:`Nombor rujukan: <b>${j.requestId || '—'}</b>`});
+      $('permohonanForm').reset();
+      leaders = []; renderLeaders();
     } else {
-      Swal.fire({ icon:'error', title:'Gagal', text: j.message || j.error || JSON.stringify(j) });
+      Swal.fire({icon:'error', title:'Gagal', text: j.message || j.error || JSON.stringify(j)});
     }
   } catch (err) {
     hideLoading();
-    Swal.fire({ icon:'error', title:'Ralat sambungan', text: err.message });
-  } finally { $('submitBtn').disabled = false; }
+    Swal.fire({icon:'error', title:'Ralat sambungan', text: err.message});
+  } finally {
+    $('submitBtn').disabled = false;
+  }
 });
 
-/* ===== Respond to Query (Sekolah) ===== */
-$('respondForm').addEventListener('submit', async function(ev){
-  ev.preventDefault();
-  $('respSubmitBtn').disabled = true; showLoading();
-  try {
-    const payload = { requestId: $('respRequestId').value.trim(), queryId: $('respQueryId').value.trim(), schoolEmail: $('schoolEmail').value.trim() || '' };
-    if (!payload.requestId || !payload.queryId) { Swal.fire({icon:'error', title:'Sila isi Request & Query ID'}); $('respSubmitBtn').disabled=false; hideLoading(); return; }
+/* ========== Loading overlay (simple) ========== */
+function showLoading(){ Swal.showLoading(); }
+function hideLoading(){ Swal.close(); }
 
-    const fileMap = {
-      kertasKerja: $('resp_file_kertasKerja').files[0],
-      maklumatAnggota: $('resp_file_maklumatAnggota').files[0],
-      permitBas: $('resp_file_permitBas').files[0],
-      lesenPemandu: $('resp_file_lesenPemandu').files[0],
-      taklimat: $('resp_file_taklimat').files[0]
-    };
-    const filesBase64 = {};
-    for (const k in fileMap) if (fileMap[k]) filesBase64[k] = await fileToBase64(fileMap[k]);
+/* ========== showFilesModal(req) ========== */
+function showFilesModal(req) {
+  const modal = document.getElementById('filesModal');
+  const list = document.getElementById('filesList');
+  document.getElementById('filesModalTitle').textContent = `Fail untuk ${req['Request ID'] || ''}`;
+  list.innerHTML = '';
 
-    const res = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ type:'queryResponse', payload, filesBase64 }) });
-    const j = await res.json();
-    hideLoading();
-    if (j.ok) {
-      Swal.fire({ icon:'success', title:'Berjaya', text: 'Tindak balas query telah diterima.' });
-      $('respondForm').reset();
-    } else Swal.fire({ icon:'error', title:'Gagal', text: j.message || JSON.stringify(j) });
-  } catch (err) {
-    hideLoading();
-    Swal.fire({ icon:'error', title:'Ralat sambungan', text: err.message });
-  } finally { $('respSubmitBtn').disabled=false; }
-});
+  const fileCols = [
+    {key:'File_KERTAS_KERJA', label:'KERTAS KERJA'},
+    {key:'File_MAKLUMAT_ANGGOTA', label:'MAKLUMAT ANGGOTA'},
+    {key:'File_PERMIT_BAS', label:'PERMIT BAS'},
+    {key:'File_LESEN_PEMANDU', label:'LESEN PEMANDU'},
+    {key:'File_TAKLIMAT', label:'INTIPATI TAKLIMAT'},
+    {key:'Letters', label:'Surat / Letters'}
+  ];
 
-/* ===== Officer login & listRequests ===== */
+  let any = false;
+  fileCols.forEach(col => {
+    const v = req[col.key] || '';
+    const urls = (v || '').toString().split(/\s*;\s*/).filter(Boolean);
+    if (urls.length) {
+      any = true;
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = `<div class="font-medium">${col.label}:</div>`;
+      const ul = document.createElement('div');
+      urls.forEach((u, i) => {
+        const a = document.createElement('a');
+        a.href = u;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.className = 'inline-block mt-1 underline text-blue-600';
+        a.textContent = `${col.label} ${urls.length > 1 ? '(' + (i + 1) + ')' : ''}`;
+        ul.appendChild(a);
+        ul.appendChild(document.createTextNode(' '));
+      });
+      wrapper.appendChild(ul);
+      list.appendChild(wrapper);
+    }
+  });
+
+  if (!any) list.innerHTML = '<div class="text-gray-600">Tiada fail dimuat naik.</div>';
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+$('filesModalClose').addEventListener('click', ()=>{ const m=$('filesModal'); m.classList.add('hidden'); m.classList.remove('flex');});
+$('filesModalClose2').addEventListener('click', ()=>{ const m=$('filesModal'); m.classList.add('hidden'); m.classList.remove('flex');});
+
+/* ========== Officer Login & List ========== */
 let officerSecret = null;
 $('loginOfficer').addEventListener('click', async ()=>{
-  const pw = await Swal.fire({ title:'Masukkan kata laluan Pegawai', input:'password', inputPlaceholder:'Katalaluan Pegawai', showCancelButton:true });
-  if (!pw || !pw.value) return;
-  officerSecret = pw.value;
+  const pw = prompt('Masukkan kata laluan Pegawai:');
+  if (!pw) return;
   try {
-    const res = await fetch(`${GAS_URL}?action=checkSecret&secret=${encodeURIComponent(officerSecret)}`);
+    const res = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
     const j = await res.json();
-    if (j.ok) { Swal.fire({icon:'success', title:'Log masuk berjaya'}); loadRequests(); setActive('officer'); } else { officerSecret = null; Swal.fire({icon:'error', title:'Kata laluan salah'}); }
-  } catch (err) { Swal.fire({icon:'error',title:'Ralat', text:err.message}); officerSecret=null; }
+    if (j.ok) { officerSecret = pw; Swal.fire({icon:'success', title:'Login Pegawai berjaya'}); loadRequests(); showSection('officerSection'); }
+    else Swal.fire({icon:'error', title:'Login gagal'});
+  } catch (err) { Swal.fire({icon:'error', title:'Ralat', text: err.message}); }
 });
 
 async function loadRequests(){
-  if (!officerSecret) { console.warn('Need login'); return; }
-  showLoading();
+  if (!officerSecret) return Swal.fire({icon:'warning', title:'Sila log masuk dahulu'});
   try {
-    const res = await fetch(`${GAS_URL}?action=listRequests&secret=${encodeURIComponent(officerSecret)}`);
-    const j = await res.json(); hideLoading();
-    if (!j.ok) { Swal.fire({icon:'error', title:'Gagal', text:j.message||JSON.stringify(j)}); return; }
-    renderRequestsTable(j.requests);
-  } catch (err) { hideLoading(); Swal.fire({icon:'error', title:'Ralat', text: err.message}); }
+    const res = await fetch(GAS_URL + '?action=listRequests&secret=' + encodeURIComponent(officerSecret));
+    const j = await res.json();
+    if (!j.ok) return Swal.fire({icon:'error', title:'Gagal fetch', text:j.message || ''});
+    const requests = j.requests || [];
+    renderOfficerTable(requests);
+  } catch (err) { Swal.fire({icon:'error', title:'Ralat', text: err.message}); }
 }
 
-function renderRequestsTable(requests){
-  const filter = $('filterCategory').value;
-  const container = $('requestsTable'); container.innerHTML='';
+function renderOfficerTable(requests) {
   const table = document.createElement('table'); table.className='w-full text-sm';
   table.innerHTML = `<thead><tr class="bg-gray-100"><th class="p-2">ID</th><th>Nama Sekolah</th><th>Tarikh</th><th>Status</th><th>Tindakan</th></tr></thead>`;
   const tb = document.createElement('tbody');
-
-  requests.forEach(req=>{
-    if (filter && req['Category'] !== filter) return;
+  for (const req of requests) {
+    const filter = $('filterCategory').value;
+    if (filter && req['Category'] !== filter) continue;
     const tr = document.createElement('tr'); tr.className='border-b';
-    const travelDate = req['Travel Start'] || req['Submission Time'] || '';
-    tr.innerHTML = `<td class="p-2">${req['Request ID']||''}</td>
-                    <td>${req['School Name']||''}</td>
-                    <td>${travelDate}</td>
-                    <td>${req['Status']||''}</td>`;
-    const td = document.createElement('td'); td.className='p-2 flex gap-2';
+    tr.innerHTML = `<td class="p-2">${req['Request ID']}</td><td>${req['School Name'] || ''}</td><td>${req['Travel Start'] || ''}</td><td>${req['Status'] || ''}</td>`;
+    const td = document.createElement('td'); td.className='p-2';
 
-    // VIEW ALL FILES BUTTON (open all available files in new tabs)
-    const viewBtn = document.createElement('button'); viewBtn.className='px-2 py-1 border rounded'; viewBtn.textContent='LIHAT FAIL';
-    viewBtn.addEventListener('click', ()=>{
-      const keys = ['File_KERTAS_KERJA','File_MAKLUMAT_ANGGOTA','File_PERMIT_BAS','File_LESEN_PEMANDU','File_TAKLIMAT','Letters'];
-      let any=false;
-      keys.forEach(k=>{
-        if (req[k]) {
-          any=true;
-          // sometimes cell contains multiple URLs separated by ; 
-          const items = req[k].toString().split(/\s*;\s*/).filter(Boolean);
-          items.forEach(u=> window.open(u,'_blank'));
-        }
-      });
-      if (!any) Swal.fire({icon:'info', title:'Tiada fail', text:'Tiada fail dilampirkan untuk permohonan ini.'});
-    });
+    const viewBtn = document.createElement('button');
+    viewBtn.className='px-2 py-1 border rounded mr-2';
+    viewBtn.textContent='LIHAT FAIL';
+    viewBtn.addEventListener('click', ()=> { showFilesModal(req); });
 
-    // Query (Pegawai memerlukan input nota)
-    const queryBtn = document.createElement('button'); queryBtn.className='px-2 py-1 bg-yellow-400 rounded'; queryBtn.textContent='Query';
-    queryBtn.addEventListener('click', async ()=>{
-      const { value: note } = await Swal.fire({ title:'Catatan (kenapa query)', input:'textarea', inputPlaceholder:'Nyatakan perkara yang dikehendaki', showCancelButton:true });
+    const queryBtn = document.createElement('button');
+    queryBtn.className='px-2 py-1 bg-yellow-400 rounded mr-2';
+    queryBtn.textContent='Query';
+    queryBtn.addEventListener('click', async ()=> {
+      const note = prompt('Catatan (kenapa query):');
       if (!note) return;
-      // call officerAction
-      try {
-        const r = await fetch(`${GAS_URL}?action=officerAction&id=${encodeURIComponent(req['Request ID'])}&type=query&note=${encodeURIComponent(note)}&pic=Menengah&secret=${encodeURIComponent(officerSecret)}`);
-        const j = await r.json();
-        if (j.ok) { Swal.fire({icon:'success', title:'Marked Query', text:'Query ID: ' + (j.queryId || '') }); loadRequests(); } else Swal.fire({icon:'error', title:'Gagal', text:j.message||JSON.stringify(j)});
-      } catch (err) { Swal.fire({icon:'error', title:'Ralat', text:err.message}); }
+      const ok = await sendOfficerAction(req['Request ID'], 'query', note);
+      if (ok) Swal.fire({icon:'success', title:'Query dihantar', text:'Emel penghantaran akan dibuat kepada sekolah.'});
     });
 
-    // Preapprove -> generate letters
-    const preBtn = document.createElement('button'); preBtn.className='px-2 py-1 bg-green-600 text-white rounded'; preBtn.textContent='Lulus (Jana Surat)';
-    preBtn.addEventListener('click', async ()=>{
-      const { value: formValues } = await Swal.fire({
-        title:'Jana Surat Kelulusan',
-        html:
-          '<input id="swalNoJilid" class="swal2-input" placeholder="No Jilid Surat">' +
-          '<input id="swalBilSurat" class="swal2-input" placeholder="Bil Surat (angka)" value="1">' +
-          `<input id="swalTarikh" class="swal2-input" placeholder="Tarikh Surat (YYYY-MM-DD)" value="${new Date().toISOString().slice(0,10)}">`,
-        focusConfirm:false,
-        preConfirm: ()=>{
-          return {
-            noJilid: document.getElementById('swalNoJilid').value,
-            bilSurat: document.getElementById('swalBilSurat').value,
-            tarikhSurat: document.getElementById('swalTarikh').value
-          };
-        },
-        showCancelButton:true
-      });
-      if (!formValues) return;
-      // first mark preapprove
-      try {
-        const r1 = await fetch(`${GAS_URL}?action=officerAction&id=${encodeURIComponent(req['Request ID'])}&type=preapprove&note=&pic=Menengah&secret=${encodeURIComponent(officerSecret)}`);
-        const j1 = await r1.json();
-        if (!j1.ok) { Swal.fire({icon:'error', title:'Gagal', text:j1.message||JSON.stringify(j1)}); return; }
-        // generate letters
-        const q = `${GAS_URL}?action=generateLetters&id=${encodeURIComponent(req['Request ID'])}&secret=${encodeURIComponent(officerSecret)}&noJilid=${encodeURIComponent(formValues.noJilid)}&bilSurat=${encodeURIComponent(formValues.bilSurat)}&tarikhSurat=${encodeURIComponent(formValues.tarikhSurat)}`;
-        const r2 = await fetch(q);
-        const j2 = await r2.json();
-        if (j2.ok) { Swal.fire({icon:'success', title:'Surat dijana'}); loadRequests(); } else Swal.fire({icon:'error', title:'Gagal jana surat', text:j2.message||JSON.stringify(j2)});
-      } catch (err) { Swal.fire({icon:'error', title:'Ralat', text:err.message}); }
+    const preapproveBtn = document.createElement('button');
+    preapproveBtn.className='px-2 py-1 bg-green-600 text-white rounded';
+    preapproveBtn.textContent='Lulus (Jana Surat)';
+    preapproveBtn.addEventListener('click', ()=> {
+      const noJilid = prompt('No Jilid Surat:');
+      const bilSurat = prompt('Bil Surat (angka):', '1');
+      const tarikhSurat = prompt('Tarikh Surat (YYYY-MM-DD):', new Date().toISOString().slice(0,10));
+      if (noJilid && bilSurat && tarikhSurat) {
+        sendOfficerAction(req['Request ID'],'preapprove','', 'Menengah').then(()=>{
+          fetch(GAS_URL + '?action=generateLetters&id=' + encodeURIComponent(req['Request ID']) + '&secret=' + encodeURIComponent(officerSecret) + '&noJilid=' + encodeURIComponent(noJilid) + '&bilSurat=' + encodeURIComponent(bilSurat) + '&tarikhSurat=' + encodeURIComponent(tarikhSurat))
+            .then(r=>r.json()).then(j2=>{
+              if (j2.ok) { Swal.fire({icon:'success', title:'Surat dijana'}); loadRequests(); } else Swal.fire({icon:'error', title:'Gagal jana surat', text: j2.message || JSON.stringify(j2)});
+            });
+        });
+      }
     });
 
-    td.appendChild(viewBtn); td.appendChild(queryBtn); td.appendChild(preBtn);
-    tr.appendChild(td); tb.appendChild(tr);
-  });
-
-  table.appendChild(tb); container.appendChild(table);
+    td.appendChild(viewBtn); td.appendChild(queryBtn); td.appendChild(preapproveBtn);
+    tr.appendChild(td);
+    tb.appendChild(tr);
+  }
+  table.appendChild(tb);
+  $('requestsTable').innerHTML=''; $('requestsTable').appendChild(table);
 }
 
-/* ===== officerAction helper (used earlier) ===== */
-async function sendOfficerAction(id,type,note='',pic='Menengah'){
-  if (!officerSecret) return Swal.fire({icon:'error', title:'Sila log masuk dahulu'});
-  const url = `${GAS_URL}?action=officerAction&id=${encodeURIComponent(id)}&type=${encodeURIComponent(type)}&note=${encodeURIComponent(note)}&pic=${encodeURIComponent(pic)}&secret=${encodeURIComponent(officerSecret)}`;
-  const r = await fetch(url); const j = await r.json();
-  return j;
+async function sendOfficerAction(id, type, note='', pic='Menengah') {
+  try {
+    const url = GAS_URL + '?action=officerAction&id=' + encodeURIComponent(id) + '&type=' + encodeURIComponent(type) + '&note=' + encodeURIComponent(note) + '&pic=' + encodeURIComponent(pic) + '&secret=' + encodeURIComponent(officerSecret);
+    const r = await fetch(url);
+    const j = await r.json();
+    if (j.ok) { loadRequests(); return true; } else { Swal.fire({icon:'error', title:'Gagal', text: j.message||JSON.stringify(j)}); return false; }
+  } catch (err) { Swal.fire({icon:'error', title:'Ralat', text: err.message}); return false; }
 }
 
-/* ===== DP login & list for DP ===== */
+/* ========== DP Login & list ========== */
 let dpSecret = null;
 $('loginDP').addEventListener('click', async ()=>{
-  const pw = await Swal.fire({ title:'Masukkan kata laluan Timbalan', input:'password', inputPlaceholder:'Katalaluan Timbalan', showCancelButton:true });
-  if (!pw || !pw.value) return;
-  dpSecret = pw.value;
+  const pw = prompt('Masukkan kata laluan Timbalan:');
+  if (!pw) return;
   try {
-    const res = await fetch(`${GAS_URL}?action=checkSecret&secret=${encodeURIComponent(dpSecret)}`);
+    const res = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
     const j = await res.json();
-    if (j.ok) { Swal.fire({icon:'success', title:'Log masuk Timbalan berjaya'}); loadDpList(); setActive('dp'); } else { dpSecret=null; Swal.fire({icon:'error', title:'Kata laluan salah'}); }
-  } catch (err) { dpSecret=null; Swal.fire({icon:'error', title:'Ralat', text:err.message}); }
+    if (j.ok) { dpSecret = pw; Swal.fire({icon:'success', title:'Login Timbalan berjaya'}); loadDpList(); showSection('dpSection'); }
+    else Swal.fire({icon:'error', title:'Login gagal'});
+  } catch (err) { Swal.fire({icon:'error', title:'Ralat', text: err.message}); }
 });
 
 async function loadDpList(){
-  if (!dpSecret) return;
+  if (!dpSecret) return Swal.fire({icon:'warning', title:'Sila log masuk.'});
+  try {
+    const res = await fetch(GAS_URL + '?action=listRequests&secret=' + encodeURIComponent(dpSecret));
+    const j = await res.json();
+    if (!j.ok) return Swal.fire({icon:'error', title:'Gagal fetch'});
+    const requests = j.requests.filter(r=> r['Status'] && (r['Status'].toString().indexOf('READY_FOR_DP')>-1 || r['Status']==='PREAPPROVED'));
+    const div = document.createElement('div');
+    requests.forEach(req=>{
+      const card = document.createElement('div'); card.className='border p-3 mb-2 rounded';
+      card.innerHTML = `<div class="font-semibold">${req['Request ID']} — ${req['School Name']}</div><div class="text-sm">Status: ${req['Status']}</div>`;
+      const btn = document.createElement('button'); btn.className='mt-2 px-3 py-1 bg-green-600 text-white rounded'; btn.textContent='Diluluskan (Hantar Surat)';
+      btn.addEventListener('click', async ()=>{
+        if (!confirm('Sahkan hantar surat kelulusan kepada sekolah?')) return;
+        const r2 = await fetch(GAS_URL + '?action=finalApprove&id=' + encodeURIComponent(req['Request ID']) + '&secret=' + encodeURIComponent(dpSecret));
+        const j2 = await r2.json();
+        if (j2.ok) { Swal.fire({icon:'success', title:'Emel dihantar.'}); loadDpList(); } else Swal.fire({icon:'error', title:'Gagal', text: j2.message||JSON.stringify(j2)});
+      });
+      card.appendChild(btn);
+      div.appendChild(card);
+    });
+    $('dpRequestsTable').innerHTML=''; $('dpRequestsTable').appendChild(div);
+  } catch (err) { Swal.fire({icon:'error', title:'Ralat', text: err.message}); }
+}
+
+/* ========== Query Response (Sekolah) ========== */
+$('sendQueryResponseBtn').addEventListener('click', async ()=>{
+  const queryId = $('respQueryId').value.trim();
+  if (!queryId) return Swal.fire({icon:'warning', title:'Masukkan Query ID'});
+  const payload = { queryId, schoolEmail: $('respSchoolEmail').value.trim() || '' };
+  const fileMap = {
+    kertasKerja: $('resp_file_kertasKerja').files[0],
+    maklumatAnggota: $('resp_file_maklumatAnggota').files[0],
+    permitBas: $('resp_file_permitBas').files[0],
+    lesenPemandu: $('resp_file_lesenPemandu').files[0],
+    taklimat: $('resp_file_taklimat').files[0]
+  };
   showLoading();
   try {
-    const res = await fetch(`${GAS_URL}?action=listRequests&secret=${encodeURIComponent(dpSecret)}`);
-    const j = await res.json(); hideLoading();
-    if (!j.ok) { Swal.fire({icon:'error', title:'Gagal', text:j.message||JSON.stringify(j)}); return; }
-    renderDpList(j.requests);
-  } catch (err) { hideLoading(); Swal.fire({icon:'error', title:'Ralat', text:err.message}); }
-}
-
-function renderDpList(requests){
-  const rows = requests.filter(r=> r['Status'] && (r['Status'].toString().indexOf('READY_FOR_DP')>-1 || r['Status']==='PREAPPROVED' || r['Status']==='QUERY_RESPONDED'));
-  const container = $('dpRequestsTable'); container.innerHTML='';
-  rows.forEach(req=>{
-    const card = document.createElement('div'); card.className='border p-3 mb-2 rounded';
-    card.innerHTML = `<div class="font-semibold">${req['Request ID']} — ${req['School Name']}</div><div class="text-sm">Status: ${req['Status']||''}</div>`;
-    const btn = document.createElement('button'); btn.className='mt-2 px-3 py-1 bg-green-600 text-white rounded'; btn.textContent='Diluluskan (Hantar Surat)';
-    btn.addEventListener('click', async ()=>{
-      if (!confirm('Sahkan hantar surat kelulusan kepada sekolah?')) return;
-      try {
-        const r2 = await fetch(`${GAS_URL}?action=finalApprove&id=${encodeURIComponent(req['Request ID'])}&secret=${encodeURIComponent(dpSecret)}`);
-        const j2 = await r2.json();
-        if (j2.ok) { Swal.fire({icon:'success', title:'Emel dihantar'}); loadDpList(); } else Swal.fire({icon:'error', title:'Gagal', text:j2.message||JSON.stringify(j2)});
-      } catch (err) { Swal.fire({icon:'error', title:'Ralat', text:err.message}); }
+    const filesBase64 = {};
+    for (const k in fileMap) if (fileMap[k]) filesBase64[k] = await fileToBase64(fileMap[k]);
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ type:'queryResponse', payload, filesBase64 })
     });
-    card.appendChild(btn); container.appendChild(card);
-  });
-}
+    const j = await res.json();
+    hideLoading();
+    if (j.ok) Swal.fire({icon:'success', title:'Respon diterima', text: 'Terima kasih.'});
+    else Swal.fire({icon:'error', title:'Gagal', text: j.message || JSON.stringify(j)});
+  } catch (err) {
+    hideLoading();
+    Swal.fire({icon:'error', title:'Ralat', text: err.message});
+  }
+});
 
-/* ===== initial state ===== */
-setActive('intro');
+/* ========== Initial small helper: set active tab style ========== */
+document.querySelectorAll('aside button').forEach(btn=>{
+  btn.addEventListener('click', (ev)=>{
+    document.querySelectorAll('aside button').forEach(b=>b.classList.remove('bg-blue-600','text-white'));
+    ev.currentTarget.classList.add('bg-blue-600','text-white');
+  });
+});
+
+/* ========== Boot: show form tab by default ========== */
+showSection('formSection');
+
+/* Optional: if you want to auto-load officer list when secret already present, you could store secret in localStorage (not implemented for security) */
 
 </script>
 </body>
