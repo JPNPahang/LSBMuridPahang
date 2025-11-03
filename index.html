@@ -13,7 +13,9 @@
     .sidebar { background:#1f2937; color:#fff; min-height:100vh; }
     .sidebar a { color: #cbd5e1; }
     .sidebar .active { background:#0f172a; color:#fff; }
+    .tab-active { background:#2563eb !important; color:#fff !important; } /* bg-blue-600 like */
     #filesModal { z-index: 60; }
+    table { table-layout: auto; width: 100%; }
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -27,14 +29,16 @@
           <div class="text-xs text-gray-300">e-SPA Lawatan — JPN Pahang</div>
         </div>
       </div>
+
       <nav class="space-y-2">
-        <button id="tabIntroBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800">Pengenalan</button>
-        <button id="tabFormBtn" class="w-full text-left px-4 py-2 rounded bg-blue-600 text-white">Borang Permohonan</button>
-        <button id="tabOfficerBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800">Semakan (Pegawai)</button>
-        <button id="tabDPBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800">Kelulusan (Timbalan)</button>
-        <button id="tabQueryResponseBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800">Tindak Balas Query</button>
-        <button id="tabDownloadsBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800">Muat Turun</button>
+        <button id="tabIntroBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800 nav-tab">Pengenalan</button>
+        <button id="tabFormBtn" class="w-full text-left px-4 py-2 rounded nav-tab tab-active">Borang Permohonan</button>
+        <button id="tabOfficerBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800 nav-tab">Semakan (Pegawai)</button>
+        <button id="tabDPBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800 nav-tab">Kelulusan (Timbalan)</button>
+        <button id="tabQueryResponseBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800 nav-tab">Tindak Balas Query</button>
+        <button id="tabDownloadsBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800 nav-tab">Muat Turun</button>
       </nav>
+
       <div class="mt-8 text-xs text-gray-400">Versi: 1.0 • Dibangunkan untuk JPN Pahang</div>
     </aside>
 
@@ -43,7 +47,7 @@
         <img id="headerImg" src="IMAGE1.png" alt="Header" class="w-full rounded-lg shadow-sm object-cover" style="max-height:140px;">
       </div>
 
-      <section id="introSection" class="bg-white p-6 rounded shadow mb-6">
+      <section id="introSection" class="bg-white p-6 rounded shadow mb-6 hidden">
         <h2 class="text-2xl font-semibold mb-2">Selamat Datang ke Portal LAWATAN MURID</h2>
         <p class="text-gray-700">Portal ini membolehkan sekolah menghantar permohonan lawatan murid, pegawai menyemak, dan Timbalan membuat kelulusan. Gunakan tab di sebelah kiri untuk navigasi.</p>
       </section>
@@ -104,19 +108,22 @@
         <h2 class="text-xl font-semibold mb-3">Semakan (Pegawai)</h2>
 
         <!-- Login row (separately) -->
-        <div class="mb-4">
+        <div class="mb-4 flex items-center gap-3">
           <button id="loginOfficer" class="px-4 py-2 bg-blue-600 text-white rounded">Log masuk Pegawai</button>
           <span id="officerLoggedAs" class="ml-3 text-sm text-gray-600"></span>
+
+          <!-- Search (kod/nama sekolah) -->
+          <div class="ml-auto flex items-center gap-2">
+            <input id="searchBox" class="border p-2 rounded text-sm" placeholder="Cari kod sekolah atau nama sekolah..." />
+            <button id="searchBtn" class="px-3 py-1 bg-blue-600 text-white rounded text-sm">Cari</button>
+            <button id="clearSearchBtn" class="px-3 py-1 bg-gray-200 rounded text-sm">Kosong</button>
+          </div>
         </div>
 
-        <!-- Filters (keadaan: usable tanpa mematikan login) -->
+        <!-- Filters (without PIC) -->
         <div class="flex gap-3 mb-4 items-center">
           <select id="filterCategory" class="border p-2 rounded">
             <option value="">Semua Kategori</option><option value="Menengah">Menengah</option><option value="Rendah">Rendah</option>
-          </select>
-
-          <select id="filterPIC" class="border p-2 rounded">
-            <option value="">Semua PIC</option>
           </select>
 
           <select id="filterStatus" class="border p-2 rounded">
@@ -210,10 +217,27 @@ const $ = id => document.getElementById(id);
 function showLoading(){ $('loadingModal').classList.remove('hidden'); $('loadingModal').classList.add('flex'); }
 function hideLoading(){ $('loadingModal').classList.add('hidden'); $('loadingModal').classList.remove('flex'); }
 
-/* --- NEW: cache for requests (keeps data fetched) --- */
-let requestsCache = []; // stores last fetched requests
-let officerSecret = null; // set on login
+/* --- State --- */
+let requestsCache = []; // last fetched
+let officerSecret = null;
 let dpSecret = null;
+
+/* Helpers */
+function fmtDateToDisplay(isoOrRaw){
+  if (!isoOrRaw) return '';
+  // attempt to parse
+  const d = new Date(isoOrRaw);
+  if (isNaN(d.getTime())) {
+    // attempt extract YYYY-MM-DD
+    const m = String(isoOrRaw).match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return String(isoOrRaw);
+    return `${m[3]}-${m[2]}-${m[1]}`.replace(/-/g, '-').split('-').reverse().join('-'); // fallback safety
+  }
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yyyy = d.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
+}
 
 /* Date bounds (start + max 4 days) */
 (function(){
@@ -290,47 +314,53 @@ $('permohonanForm').addEventListener('submit', async function(ev){
   finally{ $('submitBtn').disabled=false; }
 });
 
-/* Tabs */
+/* Tabs with active class handling */
 function hideAllSections(){ ['introSection','formSection','officerSection','dpSection','queryResponseSection','downloadsSection'].forEach(id=>$(id).classList.add('hidden')); }
+function setActiveTab(btnId){
+  document.querySelectorAll('.nav-tab').forEach(b=>{ b.classList.remove('tab-active'); b.classList.remove('bg-blue-600'); b.classList.remove('text-white'); });
+  const el = $(btnId); if (el) el.classList.add('tab-active');
+}
 ['tabIntroBtn','tabFormBtn','tabOfficerBtn','tabDPBtn','tabQueryResponseBtn','tabDownloadsBtn'].forEach(id=>{
-  $(id).addEventListener('click',()=>{ hideAllSections(); const map={tabIntroBtn:'introSection',tabFormBtn:'formSection',tabOfficerBtn:'officerSection',tabDPBtn:'dpSection',tabQueryResponseBtn:'queryResponseSection',tabDownloadsBtn:'downloadsSection'}; $(map[id]).classList.remove('hidden'); });
+  $(id).addEventListener('click',()=>{ hideAllSections(); const map={tabIntroBtn:'introSection',tabFormBtn:'formSection',tabOfficerBtn:'officerSection',tabDPBtn:'dpSection',tabQueryResponseBtn:'queryResponseSection',tabDownloadsBtn:'downloadsSection'}; $(map[id]).classList.remove('hidden'); setActiveTab(id); });
 });
+
+// default
+setActiveTab('tabFormBtn');
+$('formSection').classList.remove('hidden');
 
 /* Pegawai: login (separate) */
 $('loginOfficer').addEventListener('click', async ()=>{
   const { value: pw } = await Swal.fire({ title:'Log masuk Pegawai', input:'password', inputLabel:'Masukkan kata laluan Pegawai', showCancelButton:true, confirmButtonText:'Log masuk' });
   if (!pw) return;
   try {
+    showLoading();
     const check = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
     const cj = await check.json();
+    hideLoading();
     if (cj.ok) {
       officerSecret = pw;
       $('officerLoggedAs').textContent = ' (Disambungkan)';
       await loadRequests();
       Swal.fire({icon:'success',title:'Login Pegawai berjaya'});
     } else Swal.fire({icon:'error',title:'Kata laluan salah'});
-  } catch (err){ Swal.fire({icon:'error',title:'Ralat sambungan',text:err.message||''}); }
+  } catch (err){ hideLoading(); Swal.fire({icon:'error',title:'Ralat sambungan',text:err.message||''}); }
 });
 
-/* populate PIC list */
-function populateFilterOptions(requests){
-  const source = requests || requestsCache || [];
-  const pis = new Set(); source.forEach(r=>{ if (r['OfficerPIC']) pis.add(String(r['OfficerPIC']).trim()); });
-  const sel = $('filterPIC'); sel.innerHTML = '<option value="">Semua PIC</option>';
-  Array.from(pis).sort().forEach(p=>{ if (p){ const o=document.createElement('option'); o.value=p; o.text=p; sel.appendChild(o); }});
-}
-
-/* Filters control */
+/* Filters control (no PIC) */
 $('applyFilters').addEventListener('click', ()=> renderTablesFromCache());
-$('clearFilters').addEventListener('click', ()=>{ $('filterCategory').value=''; $('filterPIC').value=''; $('filterStatus').value=''; renderTablesFromCache(); });
+$('clearFilters').addEventListener('click', ()=>{ $('filterCategory').value=''; $('filterStatus').value=''; $('searchBox').value=''; renderTablesFromCache(); });
 
-/* Render helper: small table generator */
+/* Search */
+$('searchBtn').addEventListener('click', ()=> renderTablesFromCache());
+$('clearSearchBtn').addEventListener('click', ()=>{ $('searchBox').value=''; renderTablesFromCache(); });
+
+/* Render helper: table generator */
 function makeTable(rows, cols){
   const t = document.createElement('table'); t.className='w-full text-sm';
   const thead = document.createElement('thead'); const trh = document.createElement('tr'); trh.className='bg-gray-100';
   cols.forEach(c=>{ const th=document.createElement('th'); th.className='p-2 text-left'; th.textContent=c; trh.appendChild(th); }); thead.appendChild(trh); t.appendChild(thead);
   const tb=document.createElement('tbody');
-  rows.forEach(r=>{ const tr=document.createElement('tr'); tr.className='border-b';
+  rows.forEach(r=>{ const tr=document.createElement('tr'); tr.className='border-b align-top';
     cols.forEach(c=>{ const td=document.createElement('td'); td.className='p-2 align-top'; td.innerHTML = r[c]||''; tr.appendChild(td); });
     tb.appendChild(tr);
   });
@@ -349,66 +379,225 @@ async function loadRequests(){
     if (!j.ok) return Swal.fire({icon:'error',title:'Gagal',text:j.message||''});
     const requests = j.requests || [];
     requestsCache = requests; // cache
-    populateFilterOptions(requestsCache);
     renderTablesFromCache();
   } catch (err) { Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); }
 }
 
-/* Render tables from requestsCache applying current filters */
+/* Utility: extract query history from a request (best-effort) */
+function extractQueries(req){
+  // Prefer structured QueryHistory if backend sends it
+  if (Array.isArray(req['QueryHistory']) && req['QueryHistory'].length) {
+    // Ensure fields id, sentDate, respondedDate, note
+    return req['QueryHistory'].map(q=>({
+      id: q.id || q.QueryID || q.queryId || '',
+      sentDate: q.sentDate || q.sent_at || q.date || '',
+      respondedDate: q.respondedDate || q.responded_at || q.response_date || '',
+      note: q.note || q.note_text || q.message || ''
+    }));
+  }
+  // Try parse OfficerNotes for patterns like "QueryID:QRY-1234 | Sent:2024-01-01 | Note:..."
+  const queries = [];
+  const txt = String(req['OfficerNote']||req['OfficerNotes']||'');
+  if (txt) {
+    const re = /QueryID[:\s]*([A-Z0-9\-_]+)/ig;
+    let m;
+    while ((m = re.exec(txt)) !== null) {
+      const id = m[1];
+      // try find a date near this occurrence
+      const slice = txt.slice(Math.max(0,m.index-120), m.index+120);
+      const dateMatch = slice.match(/(\d{4}-\d{2}-\d{2})/);
+      queries.push({ id, sentDate: dateMatch ? dateMatch[0] : '', respondedDate:'', note: slice.trim() });
+    }
+  }
+  // If backend stores a flat QueryID at top-level:
+  if (req['QueryID'] && !queries.find(q=>q.id===req['QueryID'])) {
+    queries.push({ id: req['QueryID'], sentDate: req['QueryDate']||'', respondedDate: req['QueryRespondedDate']||'', note: req['OfficerNote']||'' });
+  }
+  return queries;
+}
+
+/* Render tables from requestsCache applying current filters and search */
 function renderTablesFromCache(){
   const requests = requestsCache || [];
-  const selCategory = $('filterCategory').value;
-  const selPIC = $('filterPIC').value;
-  const selStatus = $('filterStatus').value;
+  const selCategory = $('filterCategory').value.trim();
+  const selStatus = $('filterStatus').value.trim();
+  const search = ($('searchBox').value || '').trim().toLowerCase();
 
   const newRows = [], queryRows = [], approvedRows = [];
 
+  // helper to match search against kod or name
+  function matchesSearch(req){
+    if (!search) return true;
+    const code = String(req['School Code'] || req['SchoolCode'] || req['schoolCode'] || '').toLowerCase();
+    const name = String(req['School Name'] || req['SchoolName'] || req['schoolName'] || '').toLowerCase();
+    return code.includes(search) || name.includes(search);
+  }
+
   requests.forEach(req => {
     if (selCategory && String(req['Category']||req['category']||'') !== selCategory) return;
-    if (selPIC && String(req['OfficerPIC']||'') !== selPIC) return;
     if (selStatus && String(req['Status']||'') !== selStatus) return;
+    if (!matchesSearch(req)) return;
 
     const id = req['Request ID'] || '';
-    const school = req['School Name'] || '';
-    const date = req['Travel Start'] || req['TravelStart'] || '';
+    const kodSek = req['School Code'] || req['SchoolCode'] || req['schoolCode'] || '';
+    const school = req['School Name'] || req['SchoolName'] || req['schoolName'] || '';
+    const leadersList = Array.isArray(req['LeaderNames']) && req['LeaderNames'].length ? req['LeaderNames'] : (req['Leader']? [req['Leader']] : []);
+    // For display, try read leaders from cached leaders fields, else fallback to payload field
+    let leadCombines = '';
+    if (req['LeaderNames'] || req['leaderNames']) {
+      const ln = req['LeaderNames'] || req['leaderNames'];
+      if (Array.isArray(ln)) leadCombines = ln.join('<br>');
+      else leadCombines = String(ln);
+    } else if (leaders.length) {
+      leadCombines = leaders.map(l=>l.name).filter(Boolean).join('<br>');
+    } else {
+      // try fields
+      const name1 = req['LeaderName'] || req['ketua'] || '';
+      const phone1 = req['LeaderPhone'] || req['ketuaTel'] || '';
+      if (name1) leadCombines = `${name1} ${phone1?('<br>'+phone1):''}`;
+    }
+    // Or attempt to read from custom fields
+    if (!leadCombines && Array.isArray(req['Leaders']) && req['Leaders'].length) {
+      leadCombines = req['Leaders'].map(l=> (l.name? l.name : '') + (l.phone? (' — '+l.phone) : '') ).join('<br>');
+    }
+
+    const firstLeader = (() => {
+      if (req['LeaderNames'] && Array.isArray(req['LeaderNames']) && req['LeaderNames'][0]) {
+        const name = req['LeaderNames'][0];
+        const phone = (req['LeaderPhones'] && Array.isArray(req['LeaderPhones']) && req['LeaderPhones'][0]) ? req['LeaderPhones'][0] : '';
+        return `${name}${phone?(' — '+phone):''}`;
+      }
+      if (req['Leaders'] && Array.isArray(req['Leaders']) && req['Leaders'][0]) {
+        return `${req['Leaders'][0].name||''}${req['Leaders'][0].phone?(' — '+req['Leaders'][0].phone):''}`;
+      }
+      // fallback
+      return leadCombines || '';
+    })();
+
+    const travelStart = req['Travel Start'] || req['TravelStart'] || req['travelStart'] || '';
     const status = req['Status'] || '';
     const noSurat = req['NoSuratFull'] || (req['Letters'] ? `Surat dijana (${String(req['Letters']).split(/\s*;\s*/).filter(Boolean).length})` : (req['OfficerNote'] && (String(req['OfficerNote']).match(/QueryID:([A-Z0-9\-\_]+)/i) || [])[1] ? `Query: ${(String(req['OfficerNote']).match(/QueryID:([A-Z0-9\-\_]+)/i)||[])[1]}` : '-'));
 
-    const filesHtml = ['File_KERTAS_KERJA','File_MAKLUMAT_ANGGOTA','File_PERMIT_BAS','File_LESEN_PEMANDU','File_TAKLIMAT'].map(k=>{
-      const url = req[k]||'';
-      return url ? `<p><a href="${url}" target="_blank" class="underline">Buka ${k.replace('File_','')}</a></p>` : `<p class="text-xs text-gray-500">Tiada ${k.replace('File_','')}</p>`;
-    }).join('');
+    // single "Lihat Fail" button will open modal to show available files (5 categories)
     const actions = `<div class="flex gap-2">
-        <button data-id="${id}" class="view-files px-2 py-1 border rounded">LIHAT FAIL</button>
-        <button data-id="${id}" class="btn-query px-2 py-1 bg-yellow-400 rounded">Query</button>
-        <button data-id="${id}" class="btn-preapprove px-2 py-1 bg-green-600 text-white rounded">Lulus (Jana Surat)</button>
-      </div><div class="mt-2">${filesHtml}</div>`;
+        <button data-id="${id}" class="view-files px-2 py-1 border rounded text-xs">Lihat Fail</button>
+        <button data-id="${id}" class="btn-query px-2 py-1 bg-yellow-400 rounded text-xs">Query</button>
+        <button data-id="${id}" class="btn-preapprove px-2 py-1 bg-green-600 text-white rounded text-xs">Lulus (Jana Surat)</button>
+      </div>`;
 
-    const rowObj = { 'ID': id, 'Sekolah': school, 'Tarikh': date, 'Status': status, 'Surat': noSurat, 'Tindakan': actions };
-
-    if (String(status).indexOf('QUERY') > -1) queryRows.push(rowObj);
-    else if (String(status).indexOf('FINAL_APPROVED') > -1 || String(status).indexOf('READY_FOR_DP') > -1 || String(status).indexOf('PREAPPROVED') > -1) approvedRows.push(rowObj);
-    else newRows.push(rowObj);
+    // Decide which table: query status vs approved vs new
+    if (String(status).indexOf('QUERY') > -1) {
+      // For Query table we require possibly multiple query records
+      const queries = extractQueries(req);
+      // If there are no structured queries, still create a single row with OfficerNote
+      if (queries.length === 0) {
+        const qRow = {
+          'Kod Sekolah': kodSek,
+          'Nama Sekolah': school,
+          'Kategori': req['Category'] || req['category'] || '',
+          'Tarikh Query': fmtDateToDisplay(req['QueryDate']||req['Query Sent']||req['QuerySent']||req['querySent']||req['QueryCreated']||''),
+          'Tarikh Respon': fmtDateToDisplay(req['QueryRespondedDate']||req['QueryResponseDate']||''),
+          'Catatan Query': (req['OfficerNote']||req['OfficerNotes']||''),
+          'Status': status,
+          'Surat': noSurat,
+          'Tindakan': actions
+        };
+        queryRows.push(qRow);
+      } else {
+        // if multiple queries exist, render one row per query occurrence
+        queries.forEach(q=>{
+          queryRows.push({
+            'Kod Sekolah': kodSek,
+            'Nama Sekolah': school,
+            'Kategori': req['Category'] || req['category'] || '',
+            'Tarikh Query': fmtDateToDisplay(q.sentDate),
+            'Tarikh Respon': fmtDateToDisplay(q.respondedDate),
+            'Catatan Query': q.note || '',
+            'Kod Query': q.id || '',
+            'Status': status,
+            'Surat': noSurat,
+            'Tindakan': actions
+          });
+        });
+      }
+    } else if (String(status).indexOf('FINAL_APPROVED')>-1 || String(status).indexOf('READY_FOR_DP')>-1 || String(status).indexOf('PREAPPROVED')>-1) {
+      // approved group (sort later newest first by letter date if available)
+      const letterDate = req['LetterDate'] || req['TarikhSurat'] || req['DateApproved'] || req['ApprovedDate'] || '';
+      const letterUrls = String(req['Letters']||'').split(/\s*;\s*/).filter(Boolean);
+      const letterLink = letterUrls.length ? `<a href="${letterUrls[0]}" target="_blank" class="text-blue-600 underline">Muat Turun</a>` : '';
+      approvedRows.push({
+        'Kod Sekolah': kodSek,
+        'Nama Sekolah': school,
+        'Kategori': req['Category'] || req['category'] || '',
+        'Tarikh Surat Lulus': fmtDateToDisplay(letterDate || req['GeneratedDate'] || req['NoSuratDate'] || ''),
+        'Link Surat': letterLink,
+        'Status': status,
+        'Surat': noSurat,
+        'Tindakan': actions
+      });
+    } else {
+      // newRows require kod, nama, ketua + phone, kategori, tarikh dd-mm-yyyy, status, surat, tindakan
+      newRows.push({
+        'Kod Sekolah': kodSek,
+        'Nama Sekolah': school,
+        'Kategori': req['Category'] || req['category'] || '',
+        'Tarikh': fmtDateToDisplay(travelStart),
+        'Nama Ketua & No Tel': firstLeader || '',
+        'Status': status,
+        'Surat': noSurat,
+        'Tindakan': actions
+      });
+    }
   });
 
-  const cols = ['ID','Sekolah','Tarikh','Status','Surat','Tindakan'];
-  $('tableNew').innerHTML = ''; $('tableQuery').innerHTML = ''; $('tableApproved').innerHTML = '';
-  $('tableNew').appendChild(makeTable(newRows, cols));
-  $('tableQuery').appendChild(makeTable(queryRows, cols));
-  $('tableApproved').appendChild(makeTable(approvedRows, cols));
+  // Sort approvedRows by Tarikh Surat Lulus descending (newest first)
+  approvedRows.sort((a,b)=>{
+    const pa = a['Tarikh Surat Lulus'] ? a['Tarikh Surat Lulus'].split('-').reverse().join('-') : '';
+    const pb = b['Tarikh Surat Lulus'] ? b['Tarikh Surat Lulus'].split('-').reverse().join('-') : '';
+    return pb.localeCompare(pa);
+  });
 
-  // wire buttons
+  // Render tables with specific columns per your spec
+  $('tableNew').innerHTML = '';
+  $('tableQuery').innerHTML = '';
+  $('tableApproved').innerHTML = '';
+
+  // New table columns: kod, nama, ketua+tel, kategori, tarikh (dd-mm-yyyy), status, surat, tindakan
+  if (newRows.length === 0) {
+    $('tableNew').innerHTML = `<p class="p-4 text-gray-500 italic">Tiada permohonan baru sepadan.</p>`;
+  } else {
+    const colsNew = ['Kod Sekolah','Nama Sekolah','Nama Ketua & No Tel','Kategori','Tarikh','Status','Surat','Tindakan'];
+    $('tableNew').appendChild(makeTable(newRows, colsNew));
+  }
+
+  // Query table columns: kod, nama, kategori, tarikh query, tarikh respon, kod query, catatan, status, surat, tindakan
+  if (queryRows.length === 0) {
+    $('tableQuery').innerHTML = `<p class="p-4 text-gray-500 italic">Tiada permohonan dalam status query.</p>`;
+  } else {
+    const colsQuery = ['Kod Sekolah','Nama Sekolah','Kategori','Tarikh Query','Tarikh Respon','Kod Query','Catatan Query','Status','Surat','Tindakan'];
+    $('tableQuery').appendChild(makeTable(queryRows, colsQuery));
+  }
+
+  // Approved table columns: kod, nama, kategori, tarikh surat lulus, link surat pdf, status, surat, tindakan
+  if (approvedRows.length === 0) {
+    $('tableApproved').innerHTML = `<p class="p-4 text-gray-500 italic">Tiada permohonan yang telah diluluskan.</p>`;
+  } else {
+    const colsApp = ['Kod Sekolah','Nama Sekolah','Kategori','Tarikh Surat Lulus','Link Surat','Status','Surat','Tindakan'];
+    $('tableApproved').appendChild(makeTable(approvedRows, colsApp));
+  }
+
+  // Wire up action buttons (view-files, query, preapprove) after render
   document.querySelectorAll('.view-files').forEach(btn=>{
     btn.addEventListener('click', (ev)=>{
       const id = ev.currentTarget.dataset.id;
-      const req = requests.find(r => String(r['Request ID']) === String(id));
+      const req = (requestsCache || []).find(r => String(r['Request ID']) === String(id));
       if (!req) return Swal.fire({ icon:'error', title:'Tidak jumpa rekod' });
       const files = [
-        {label:'KERTAS KERJA', url: req['File_KERTAS_KERJA']},
-        {label:'MAKLUMAT ANGGOTA', url: req['File_MAKLUMAT_ANGGOTA']},
-        {label:'PERMIT BAS', url: req['File_PERMIT_BAS']},
-        {label:'LESEN PEMANDU', url: req['File_LESEN_PEMANDU']},
-        {label:'INTIPATI TAKLIMAT', url: req['File_TAKLIMAT']}
+        {label:'KERTAS KERJA', url: req['File_KERTAS_KERJA'] || req['kertasKerjaUrl'] || ''},
+        {label:'MAKLUMAT ANGGOTA', url: req['File_MAKLUMAT_ANGGOTA'] || req['maklumatAnggotaUrl'] || ''},
+        {label:'PERMIT BAS', url: req['File_PERMIT_BAS'] || req['permitBasUrl'] || ''},
+        {label:'LESEN PEMANDU', url: req['File_LESEN_PEMANDU'] || req['lesenPemanduUrl'] || ''},
+        {label:'INTIPATI TAKLIMAT', url: req['File_TAKLIMAT'] || req['taklimatUrl'] || ''}
       ];
       const html = files.map(f => f.url ? `<p><strong>${f.label}:</strong> <a href="${f.url}" target="_blank">Buka</a></p>` : `<p><strong>${f.label}:</strong> <em>Tiada fail</em></p>`).join('');
       Swal.fire({ title:'Fail Permohonan', html, width:700, showCloseButton:true, confirmButtonText:'Tutup' });
@@ -420,7 +609,7 @@ function renderTablesFromCache(){
       const id = ev.currentTarget.dataset.id;
       const { value: note } = await Swal.fire({ title:'Catatan (kenapa query):', input:'textarea', inputPlaceholder:'Tulis sebab...', showCancelButton:true, confirmButtonText:'Hantar Query' });
       if (!note) return;
-      await sendOfficerAction(id,'query', note, $('filterPIC').value || 'Menengah');
+      await sendOfficerAction(id,'query', note, 'Menengah');
     });
   });
 
@@ -456,12 +645,14 @@ function renderTablesFromCache(){
 /* sendOfficerAction */
 async function sendOfficerAction(id,type,note='',pic='Menengah'){
   if (!officerSecret) return Swal.fire({icon:'warning',title:'Sila log masuk sebagai Pegawai untuk tindakan ini.'});
+  showLoading();
   const url = GAS_URL + '?action=officerAction&id=' + encodeURIComponent(id) + '&type=' + encodeURIComponent(type) + '&note=' + encodeURIComponent(note) + '&pic=' + encodeURIComponent(pic) + '&secret=' + encodeURIComponent(officerSecret);
   try {
     const r = await fetch(url); const j = await r.json();
+    hideLoading();
     if (j.ok){ await Swal.fire({icon:'success',title:'Berjaya',text:j.message}); await loadRequests(); return true; }
     else { await Swal.fire({icon:'error',title:'Gagal',text:j.message||JSON.stringify(j)}); return false; }
-  } catch (err){ Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); return false; }
+  } catch (err){ hideLoading(); Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); return false; }
 }
 
 /* Timbalan login */
@@ -469,10 +660,11 @@ $('loginDP').addEventListener('click', async ()=>{
   const { value: pw } = await Swal.fire({ title:'Log masuk Timbalan', input:'password', showCancelButton:true, confirmButtonText:'Log masuk' });
   if (!pw) return;
   try {
+    showLoading();
     const res = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
-    const j = await res.json();
+    const j = await res.json(); hideLoading();
     if (j.ok) { dpSecret = pw; Swal.fire({icon:'success',title:'Login Timbalan berjaya'}); loadDpList(); } else Swal.fire({icon:'error',title:'Kata laluan salah'});
-  } catch (err){ Swal.fire({icon:'error',title:'Ralat sambungan',text:err.message||''}); }
+  } catch (err){ hideLoading(); Swal.fire({icon:'error',title:'Ralat sambungan',text:err.message||''}); }
 });
 
 async function loadDpList(){
@@ -482,7 +674,8 @@ async function loadDpList(){
     const j = await res.json(); if (!j.ok) return Swal.fire({icon:'error',title:'Gagal fetch.'});
     const requests = j.requests.filter(r=> r['Status'] && (String(r['Status']).indexOf('READY_FOR_DP')>-1 || r['Status']==='PREAPPROVED'));
     const div = document.createElement('div');
-    requests.forEach(req=>{ const card=document.createElement('div'); card.className='border p-3 mb-2 rounded'; card.innerHTML=`<div class="font-semibold">${req['Request ID']} — ${req['School Name']}</div><div class="text-sm">Status: ${req['Status']}</div>`; const btn=document.createElement('button'); btn.className='mt-2 px-3 py-1 bg-green-600 text-white rounded'; btn.textContent='Diluluskan (Hantar Surat)'; btn.addEventListener('click',async ()=>{ if(!confirm('Sahkan hantar surat kelulusan kepada sekolah?')) return; const r2=await fetch(GAS_URL + '?action=finalApprove&id=' + encodeURIComponent(req['Request ID']) + '&secret=' + encodeURIComponent(dpSecret)); const j2=await r2.json(); if(j2.ok){ Swal.fire({icon:'success',title:'Emel dihantar.'}); loadDpList(); } else Swal.fire({icon:'error',title:'Gagal',text:j2.message||JSON.stringify(j2)}); }); card.appendChild(btn); div.appendChild(card); });
+    if (requests.length === 0) div.innerHTML = `<p class="text-gray-500 italic">Tiada permohonan sedia untuk kelulusan akhir.</p>`;
+    requests.forEach(req=>{ const card=document.createElement('div'); card.className='border p-3 mb-2 rounded'; card.innerHTML=`<div class="font-semibold">${req['Request ID']} — ${req['School Name']}</div><div class="text-sm">Status: ${req['Status']}</div>`; const btn=document.createElement('button'); btn.className='mt-2 px-3 py-1 bg-green-600 text-white rounded'; btn.textContent='Diluluskan (Hantar Surat)'; btn.addEventListener('click',async ()=>{ if(!confirm('Sahkan hantar surat kelulusan kepada sekolah?')) return; showLoading(); const r2=await fetch(GAS_URL + '?action=finalApprove&id=' + encodeURIComponent(req['Request ID']) + '&secret=' + encodeURIComponent(dpSecret)); const j2=await r2.json(); hideLoading(); if(j2.ok){ Swal.fire({icon:'success',title:'Emel dihantar.'}); loadDpList(); } else Swal.fire({icon:'error',title:'Gagal',text:j2.message||JSON.stringify(j2)}); }); card.appendChild(btn); div.appendChild(card); });
     $('dpRequestsTable').innerHTML=''; $('dpRequestsTable').appendChild(div);
   } catch (err){ Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); }
 }
@@ -504,6 +697,10 @@ $('sendQueryResponseBtn').addEventListener('click', async ()=>{
     else Swal.fire({icon:'error',title:'Gagal',text:j.message||JSON.stringify(j)});
   } catch (err){ hideLoading(); Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); }
 });
+
+/* Initial render: if any cached data exist, render */
+renderTablesFromCache();
+
 </script>
 
 </body>
