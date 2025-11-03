@@ -225,13 +225,11 @@ let dpSecret = null;
 /* Helpers */
 function fmtDateToDisplay(isoOrRaw){
   if (!isoOrRaw) return '';
-  // attempt to parse
   const d = new Date(isoOrRaw);
   if (isNaN(d.getTime())) {
-    // attempt extract YYYY-MM-DD
     const m = String(isoOrRaw).match(/(\d{4})-(\d{2})-(\d{2})/);
     if (!m) return String(isoOrRaw);
-    return `${m[3]}-${m[2]}-${m[1]}`.replace(/-/g, '-').split('-').reverse().join('-'); // fallback safety
+    return `${m[3]}-${m[2]}-${m[1]}`;
   }
   const dd = String(d.getDate()).padStart(2,'0');
   const mm = String(d.getMonth()+1).padStart(2,'0');
@@ -374,20 +372,21 @@ async function loadRequests(){
     return Swal.fire({icon:'warning',title:'Sila log masuk dahulu.'});
   }
   try {
+    showLoading();
     const res = await fetch(GAS_URL + '?action=listRequests&secret=' + encodeURIComponent(officerSecret));
     const j = await res.json();
+    hideLoading();
     if (!j.ok) return Swal.fire({icon:'error',title:'Gagal',text:j.message||''});
     const requests = j.requests || [];
     requestsCache = requests; // cache
     renderTablesFromCache();
-  } catch (err) { Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); }
+  } catch (err) { hideLoading(); Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); }
 }
 
 /* Utility: extract query history from a request (best-effort) */
 function extractQueries(req){
-  // Prefer structured QueryHistory if backend sends it
+  if (!req) return [];
   if (Array.isArray(req['QueryHistory']) && req['QueryHistory'].length) {
-    // Ensure fields id, sentDate, respondedDate, note
     return req['QueryHistory'].map(q=>({
       id: q.id || q.QueryID || q.queryId || '',
       sentDate: q.sentDate || q.sent_at || q.date || '',
@@ -395,7 +394,6 @@ function extractQueries(req){
       note: q.note || q.note_text || q.message || ''
     }));
   }
-  // Try parse OfficerNotes for patterns like "QueryID:QRY-1234 | Sent:2024-01-01 | Note:..."
   const queries = [];
   const txt = String(req['OfficerNote']||req['OfficerNotes']||'');
   if (txt) {
@@ -403,13 +401,11 @@ function extractQueries(req){
     let m;
     while ((m = re.exec(txt)) !== null) {
       const id = m[1];
-      // try find a date near this occurrence
       const slice = txt.slice(Math.max(0,m.index-120), m.index+120);
       const dateMatch = slice.match(/(\d{4}-\d{2}-\d{2})/);
       queries.push({ id, sentDate: dateMatch ? dateMatch[0] : '', respondedDate:'', note: slice.trim() });
     }
   }
-  // If backend stores a flat QueryID at top-level:
   if (req['QueryID'] && !queries.find(q=>q.id===req['QueryID'])) {
     queries.push({ id: req['QueryID'], sentDate: req['QueryDate']||'', respondedDate: req['QueryRespondedDate']||'', note: req['OfficerNote']||'' });
   }
@@ -425,7 +421,6 @@ function renderTablesFromCache(){
 
   const newRows = [], queryRows = [], approvedRows = [];
 
-  // helper to match search against kod or name
   function matchesSearch(req){
     if (!search) return true;
     const code = String(req['School Code'] || req['SchoolCode'] || req['schoolCode'] || '').toLowerCase();
@@ -441,26 +436,8 @@ function renderTablesFromCache(){
     const id = req['Request ID'] || '';
     const kodSek = req['School Code'] || req['SchoolCode'] || req['schoolCode'] || '';
     const school = req['School Name'] || req['SchoolName'] || req['schoolName'] || '';
-    const leadersList = Array.isArray(req['LeaderNames']) && req['LeaderNames'].length ? req['LeaderNames'] : (req['Leader']? [req['Leader']] : []);
-    // For display, try read leaders from cached leaders fields, else fallback to payload field
-    let leadCombines = '';
-    if (req['LeaderNames'] || req['leaderNames']) {
-      const ln = req['LeaderNames'] || req['leaderNames'];
-      if (Array.isArray(ln)) leadCombines = ln.join('<br>');
-      else leadCombines = String(ln);
-    } else if (leaders.length) {
-      leadCombines = leaders.map(l=>l.name).filter(Boolean).join('<br>');
-    } else {
-      // try fields
-      const name1 = req['LeaderName'] || req['ketua'] || '';
-      const phone1 = req['LeaderPhone'] || req['ketuaTel'] || '';
-      if (name1) leadCombines = `${name1} ${phone1?('<br>'+phone1):''}`;
-    }
-    // Or attempt to read from custom fields
-    if (!leadCombines && Array.isArray(req['Leaders']) && req['Leaders'].length) {
-      leadCombines = req['Leaders'].map(l=> (l.name? l.name : '') + (l.phone? (' — '+l.phone) : '') ).join('<br>');
-    }
 
+    // derive leader info (best-effort)
     const firstLeader = (() => {
       if (req['LeaderNames'] && Array.isArray(req['LeaderNames']) && req['LeaderNames'][0]) {
         const name = req['LeaderNames'][0];
@@ -470,41 +447,45 @@ function renderTablesFromCache(){
       if (req['Leaders'] && Array.isArray(req['Leaders']) && req['Leaders'][0]) {
         return `${req['Leaders'][0].name||''}${req['Leaders'][0].phone?(' — '+req['Leaders'][0].phone):''}`;
       }
-      // fallback
-      return leadCombines || '';
+      if (req['LeaderName'] || req['Leader'] ) {
+        const n = req['LeaderName'] || req['Leader'] || '';
+        const p = req['LeaderPhone'] || req['LeaderTel'] || '';
+        return `${n}${p?(' — '+p):''}`;
+      }
+      return '';
     })();
 
     const travelStart = req['Travel Start'] || req['TravelStart'] || req['travelStart'] || '';
     const status = req['Status'] || '';
     const noSurat = req['NoSuratFull'] || (req['Letters'] ? `Surat dijana (${String(req['Letters']).split(/\s*;\s*/).filter(Boolean).length})` : (req['OfficerNote'] && (String(req['OfficerNote']).match(/QueryID:([A-Z0-9\-\_]+)/i) || [])[1] ? `Query: ${(String(req['OfficerNote']).match(/QueryID:([A-Z0-9\-\_]+)/i)||[])[1]}` : '-'));
 
-    // single "Lihat Fail" button will open modal to show available files (5 categories)
-    const actions = `<div class="flex gap-2">
+    // single "Lihat Fail" + other actions
+    const actionsGeneric = `<div class="flex gap-2">
+        <button data-id="${id}" class="view-files px-2 py-1 border rounded text-xs">Lihat Fail</button>
+      </div>`;
+    const actionsWithOfficerBtns = `<div class="flex gap-2">
         <button data-id="${id}" class="view-files px-2 py-1 border rounded text-xs">Lihat Fail</button>
         <button data-id="${id}" class="btn-query px-2 py-1 bg-yellow-400 rounded text-xs">Query</button>
         <button data-id="${id}" class="btn-preapprove px-2 py-1 bg-green-600 text-white rounded text-xs">Lulus (Jana Surat)</button>
       </div>`;
 
-    // Decide which table: query status vs approved vs new
     if (String(status).indexOf('QUERY') > -1) {
-      // For Query table we require possibly multiple query records
       const queries = extractQueries(req);
-      // If there are no structured queries, still create a single row with OfficerNote
       if (queries.length === 0) {
         const qRow = {
           'Kod Sekolah': kodSek,
           'Nama Sekolah': school,
           'Kategori': req['Category'] || req['category'] || '',
-          'Tarikh Query': fmtDateToDisplay(req['QueryDate']||req['Query Sent']||req['QuerySent']||req['querySent']||req['QueryCreated']||''),
+          'Tarikh Query': fmtDateToDisplay(req['QueryDate']||req['Query Sent']||req['QuerySent']||req['QueryCreated']||''),
           'Tarikh Respon': fmtDateToDisplay(req['QueryRespondedDate']||req['QueryResponseDate']||''),
           'Catatan Query': (req['OfficerNote']||req['OfficerNotes']||''),
+          'Kod Query': req['QueryID'] || '',
           'Status': status,
           'Surat': noSurat,
-          'Tindakan': actions
+          'Tindakan': actionsWithOfficerBtns
         };
         queryRows.push(qRow);
       } else {
-        // if multiple queries exist, render one row per query occurrence
         queries.forEach(q=>{
           queryRows.push({
             'Kod Sekolah': kodSek,
@@ -516,12 +497,12 @@ function renderTablesFromCache(){
             'Kod Query': q.id || '',
             'Status': status,
             'Surat': noSurat,
-            'Tindakan': actions
+            'Tindakan': actionsWithOfficerBtns
           });
         });
       }
     } else if (String(status).indexOf('FINAL_APPROVED')>-1 || String(status).indexOf('READY_FOR_DP')>-1 || String(status).indexOf('PREAPPROVED')>-1) {
-      // approved group (sort later newest first by letter date if available)
+      // approved group -> only Lihat Fail (no query/lulus buttons)
       const letterDate = req['LetterDate'] || req['TarikhSurat'] || req['DateApproved'] || req['ApprovedDate'] || '';
       const letterUrls = String(req['Letters']||'').split(/\s*;\s*/).filter(Boolean);
       const letterLink = letterUrls.length ? `<a href="${letterUrls[0]}" target="_blank" class="text-blue-600 underline">Muat Turun</a>` : '';
@@ -533,10 +514,9 @@ function renderTablesFromCache(){
         'Link Surat': letterLink,
         'Status': status,
         'Surat': noSurat,
-        'Tindakan': actions
+        'Tindakan': actionsGeneric
       });
     } else {
-      // newRows require kod, nama, ketua + phone, kategori, tarikh dd-mm-yyyy, status, surat, tindakan
       newRows.push({
         'Kod Sekolah': kodSek,
         'Nama Sekolah': school,
@@ -545,24 +525,22 @@ function renderTablesFromCache(){
         'Nama Ketua & No Tel': firstLeader || '',
         'Status': status,
         'Surat': noSurat,
-        'Tindakan': actions
+        'Tindakan': actionsWithOfficerBtns
       });
     }
   });
 
-  // Sort approvedRows by Tarikh Surat Lulus descending (newest first)
+  // Sort approvedRows by Tarikh Surat Lulus descending
   approvedRows.sort((a,b)=>{
     const pa = a['Tarikh Surat Lulus'] ? a['Tarikh Surat Lulus'].split('-').reverse().join('-') : '';
     const pb = b['Tarikh Surat Lulus'] ? b['Tarikh Surat Lulus'].split('-').reverse().join('-') : '';
     return pb.localeCompare(pa);
   });
 
-  // Render tables with specific columns per your spec
   $('tableNew').innerHTML = '';
   $('tableQuery').innerHTML = '';
   $('tableApproved').innerHTML = '';
 
-  // New table columns: kod, nama, ketua+tel, kategori, tarikh (dd-mm-yyyy), status, surat, tindakan
   if (newRows.length === 0) {
     $('tableNew').innerHTML = `<p class="p-4 text-gray-500 italic">Tiada permohonan baru sepadan.</p>`;
   } else {
@@ -570,7 +548,6 @@ function renderTablesFromCache(){
     $('tableNew').appendChild(makeTable(newRows, colsNew));
   }
 
-  // Query table columns: kod, nama, kategori, tarikh query, tarikh respon, kod query, catatan, status, surat, tindakan
   if (queryRows.length === 0) {
     $('tableQuery').innerHTML = `<p class="p-4 text-gray-500 italic">Tiada permohonan dalam status query.</p>`;
   } else {
@@ -578,7 +555,6 @@ function renderTablesFromCache(){
     $('tableQuery').appendChild(makeTable(queryRows, colsQuery));
   }
 
-  // Approved table columns: kod, nama, kategori, tarikh surat lulus, link surat pdf, status, surat, tindakan
   if (approvedRows.length === 0) {
     $('tableApproved').innerHTML = `<p class="p-4 text-gray-500 italic">Tiada permohonan yang telah diluluskan.</p>`;
   } else {
@@ -680,7 +656,10 @@ async function loadDpList(){
   } catch (err){ Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); }
 }
 
-/* Query response (sekolah tanpa login) */
+/* ------------------------------
+   Query response (sekolah tanpa login)
+   - Enhanced: if GAS returns updatedRequest or files info, merge into requestsCache
+   ------------------------------ */
 $('sendQueryResponseBtn').addEventListener('click', async ()=>{
   const queryId = $('respQueryId').value && $('respQueryId').value.trim(); if (!queryId) return Swal.fire({icon:'error',title:'Sila masukkan Query ID'});
   showLoading();
@@ -691,14 +670,82 @@ $('sendQueryResponseBtn').addEventListener('click', async ()=>{
     };
     const filesBase64={};
     for (const k in fileMap) if (fileMap[k]) filesBase64[k]=await fileToBase64(fileMap[k]);
+
     const body = JSON.stringify({ type:'queryResponse', payload:{ queryId, schoolEmail: $('respSchoolEmail').value.trim() }, filesBase64 });
-    const r = await fetch(GAS_URL, { method:'POST', body }); const j = await r.json(); hideLoading();
-    if (j.ok){ Swal.fire({icon:'success',title:'Respon query diterima'}); $('respQueryId').value=''; $('respSchoolEmail').value=''; ['resp_file_kertasKerja','resp_file_maklumatAnggota','resp_file_permitBas','resp_file_lesenPemandu','resp_file_taklimat'].forEach(id=>{ if($(id)) $(id).value=''; }); }
-    else Swal.fire({icon:'error',title:'Gagal',text:j.message||JSON.stringify(j)});
-  } catch (err){ hideLoading(); Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); }
+    const r = await fetch(GAS_URL, { method:'POST', body });
+    const j = await r.json();
+    hideLoading();
+
+    if (j.ok){
+      // Success — attempt to merge with local cache if server provided updated info
+      // Priority 1: server returns updatedRequest (full object)
+      // Priority 2: server returns requestId and files (object of urls)
+      if (j.updatedRequest && j.updatedRequest['Request ID']){
+        const updated = j.updatedRequest;
+        // find and replace by Request ID
+        const idx = requestsCache.findIndex(x => String(x['Request ID']) === String(updated['Request ID']));
+        if (idx > -1) requestsCache[idx] = Object.assign({}, requestsCache[idx], updated);
+        else requestsCache.unshift(updated);
+        // ensure status becomes QUERY_RESPONDED (or server-provided)
+        requestsCache[idx > -1 ? idx : 0]['Status'] = updated['Status'] || 'QUERY_RESPONDED';
+        Swal.fire({icon:'success',title:'Respon query diterima',text:'Fail digabungkan dengan permohonan sedia ada.'});
+        renderTablesFromCache();
+      } else if (j.requestId){
+        // server returned requestId and maybe files map
+        const rid = j.requestId;
+        const files = j.files || {}; // expect keys like kertasKerja => url
+        const idx = requestsCache.findIndex(x => String(x['Request ID']) === String(rid));
+        if (idx > -1) {
+          const target = requestsCache[idx];
+          // merge file urls into request object
+          Object.keys(files).forEach(k=>{
+            // store in same key naming as backend uses if possible
+            const mapKey = {
+              kertasKerja: 'File_KERTAS_KERJA',
+              maklumatAnggota: 'File_MAKLUMAT_ANGGOTA',
+              permitBas: 'File_PERMIT_BAS',
+              lesenPemandu: 'File_LESEN_PEMANDU',
+              taklimat: 'File_TAKLIMAT'
+            }[k] || k;
+            target[mapKey] = files[k];
+          });
+          // set status to QUERY_RESPONDED (or server-provided)
+          target['Status'] = j.status || 'QUERY_RESPONDED';
+          Swal.fire({icon:'success',title:'Respon query diterima',text:'Fail digabungkan dengan permohonan sedia ada.'});
+          renderTablesFromCache();
+        } else {
+          // not in cache: optionally fetch fresh list (only if officer logged in)
+          if (officerSecret) {
+            await loadRequests();
+            Swal.fire({icon:'success',title:'Respon dihantar',text:'Data dikemaskini daripada pelayan.'});
+          } else {
+            Swal.fire({icon:'success',title:'Respon dihantar',text:'Respon diterima — pegawai akan melihat kemas kini apabila mereka menyegarkan senarai.'});
+          }
+        }
+      } else {
+        // No structured data returned. Best-effort: ask to refresh (handled gracefully)
+        if (officerSecret) {
+          await loadRequests();
+          Swal.fire({icon:'success',title:'Respon diterima',text:'Data dikemaskini daripada pelayan.'});
+        } else {
+          Swal.fire({icon:'success',title:'Respon diterima',text:'Respon diterima — pegawai akan melihat kemas kini apabila mereka menyegarkan senarai.'});
+        }
+      }
+
+      // clear form
+      $('respQueryId').value=''; $('respSchoolEmail').value='';
+      ['resp_file_kertasKerja','resp_file_maklumatAnggota','resp_file_permitBas','resp_file_lesenPemandu','resp_file_taklimat'].forEach(id=>{ if($(id)) $(id).value=''; });
+    } else {
+      Swal.fire({icon:'error',title:'Gagal',text:j.message||JSON.stringify(j)});
+    }
+  } catch (err){
+    hideLoading();
+    Swal.fire({icon:'error',title:'Ralat',text:err.message||''});
+  }
 });
 
-/* Initial render: if any cached data exist, render */
+
+// Initial render: if any cached data exist, render
 renderTablesFromCache();
 
 </script>
