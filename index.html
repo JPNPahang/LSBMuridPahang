@@ -14,24 +14,13 @@
 
   <style>
     /* sidebar */
-    .sidebar { background:#0b1720; color:#fff; min-height:100vh; }
-    .sidebar a, .sidebar button { color: #cbd5e1; }
+    .sidebar { background:#1f2937; color:#fff; min-height:100vh; }
+    .sidebar a { color: #cbd5e1; }
     .sidebar .active { background:#0f172a; color:#fff; }
     /* modal backdrops with tailwind utility not always consistent on older tailwind -> ensure z-index */
     #filesModal { z-index: 60; }
     /* small tweaks */
     .btn-ghost { background: transparent; border: 1px solid transparent; }
-    /* simple spinner */
-    .spin {
-      border: 4px solid rgba(0,0,0,0.05);
-      border-left-color: #4f46e5;
-      height: 28px;
-      width: 28px;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      display:inline-block;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -40,8 +29,7 @@
     <!-- Sidebar -->
     <aside class="sidebar w-64 p-6">
       <div class="flex items-center gap-3 mb-6">
-        <!-- IMAGE2.png should be in your repo or absolute URL -->
-        <img src="IMAGE2.png" alt="Logo JPN" class="w-12 h-12 object-contain">
+        <img id="logoImg" src="IMAGE2.png" alt="Logo JPN" class="w-12 h-12 object-contain">
         <div>
           <div class="text-xl font-bold">LAWATAN MURID</div>
           <div class="text-xs text-gray-300">e-SPA Lawatan — JPN Pahang</div>
@@ -66,8 +54,7 @@
     <main class="flex-1 p-8">
       <!-- header image -->
       <div class="mb-6">
-        <!-- IMAGE1.png should be in your repo or absolute URL -->
-        <img src="IMAGE1.png" alt="Header" class="w-full rounded-lg shadow-sm object-cover" style="max-height:140px;">
+        <img id="headerImg" src="IMAGE1.png" alt="Header" class="w-full rounded-lg shadow-sm object-cover" style="max-height:140px;">
       </div>
 
       <!-- Intro -->
@@ -182,13 +169,34 @@
       <!-- Officer section -->
       <section id="officerSection" class="hidden bg-white p-6 rounded shadow mb-6">
         <h2 class="text-xl font-semibold mb-3">Semakan (Pegawai)</h2>
-        <div class="flex gap-3 mb-3">
+
+        <div class="flex gap-3 mb-3 items-center">
           <button id="loginOfficer" class="px-4 py-2 bg-blue-600 text-white rounded">Log masuk Pegawai</button>
-          <select id="filterCategory" class="border p-2 rounded">
+
+          <!-- Filters (disabled until logged in) -->
+          <select id="filterCategory" class="border p-2 rounded" disabled>
             <option value="">Semua Kategori</option>
             <option value="Menengah">Menengah</option>
             <option value="Rendah">Rendah</option>
           </select>
+
+          <select id="filterPIC" class="border p-2 rounded" disabled>
+            <option value="">Semua PIC</option>
+            <!-- will be populated dynamically after login -->
+          </select>
+
+          <select id="filterStatus" class="border p-2 rounded" disabled>
+            <option value="">Semua Status</option>
+            <option value="NEW">NEW</option>
+            <option value="QUERY">QUERY</option>
+            <option value="QUERY_RESPONDED">QUERY_RESPONDED</option>
+            <option value="PREAPPROVED">PREAPPROVED</option>
+            <option value="READY_FOR_DP">READY_FOR_DP</option>
+            <option value="FINAL_APPROVED">FINAL_APPROVED</option>
+          </select>
+
+          <button id="applyFilters" class="px-3 py-1 bg-gray-200 rounded" disabled>Tapis</button>
+          <button id="clearFilters" class="px-3 py-1 bg-gray-100 rounded" disabled>Bersihkan</button>
         </div>
 
         <div id="requestsTable" class="overflow-auto max-h-96"></div>
@@ -253,16 +261,16 @@
         <p class="text-gray-700 mb-3">Sila klik butang di bawah untuk memuat turun bahan.</p>
         <div class="space-x-2">
           <!-- Replace hrefs with real URLs -->
-          <a id="dl1" href="#" class="inline-block px-4 py-2 bg-blue-600 text-white rounded">Bahan 1</a>
-          <a id="dl2" href="#" class="inline-block px-4 py-2 bg-blue-600 text-white rounded">Bahan 2</a>
-          <a id="dl3" href="#" class="inline-block px-4 py-2 bg-blue-600 text-white rounded">Bahan 3</a>
+          <a href="#" class="inline-block px-4 py-2 bg-blue-600 text-white rounded">Bahan 1</a>
+          <a href="#" class="inline-block px-4 py-2 bg-blue-600 text-white rounded">Bahan 2</a>
+          <a href="#" class="inline-block px-4 py-2 bg-blue-600 text-white rounded">Bahan 3</a>
         </div>
       </section>
 
     </main>
   </div>
 
-  <!-- Modal: files (not used because we use Swal for file list) -->
+  <!-- Modal: files (unused default; we show via Swal) -->
   <div id="filesModal" class="fixed inset-0 hidden items-center justify-center bg-black bg-opacity-40">
     <div class="bg-white rounded shadow-lg w-11/12 md:w-2/3 lg:w-1/2 p-6">
       <div class="flex justify-between items-center mb-4">
@@ -276,23 +284,21 @@
     </div>
   </div>
 
-  <!-- Loading modal -->
-  <div id="loadingModal" class="fixed inset-0 hidden items-center justify-center bg-black bg-opacity-40 z-50">
+  <!-- small loading overlay (used during uploads) -->
+  <div id="loadingModal" class="hidden fixed inset-0 items-center justify-center bg-black bg-opacity-30 z-50">
     <div class="bg-white p-6 rounded shadow text-center">
-      <div class="mb-4">Sila tunggu — proses sedang dijalankan…</div>
-      <div class="spin mx-auto"></div>
+      <div class="mb-2">Sila tunggu — proses sedang dijalankan...</div>
     </div>
   </div>
 
 <script>
 /* ==================== CONFIG ==================== */
-/* Gantikan URL ini jika perlu (gunakan URL Exec Apps Script Anda) */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbx_B7hzQrDtlks5fAynamk1s143zUvCxVWEQwfeNC3-BmKCAR9CZ27Sqml7qhIWZN3O/exec';
 /* ================================================= */
 
 function $(id){ return document.getElementById(id); }
-function showLoading(){ const m=$('loadingModal'); if(m){ m.classList.remove('hidden'); m.classList.add('flex'); } }
-function hideLoading(){ const m=$('loadingModal'); if(m){ m.classList.add('hidden'); m.classList.remove('flex'); } }
+function showLoading(){ $('loadingModal').classList.remove('hidden'); $('loadingModal').classList.add('flex'); }
+function hideLoading(){ $('loadingModal').classList.add('hidden'); $('loadingModal').classList.remove('flex'); }
 
 /* ========== Set min/max date for travelStart -> travelEnd (start + max 4 days) ========== */
 (function setMinTravelDate(){
@@ -390,8 +396,9 @@ $('permohonanForm').addEventListener('submit', async function(ev){
     participantCount: $('participantCount').value
   };
 
-  // client-side date validation
+  // validate dates client-side
   const start = new Date(payload.travelStartDate);
+  const end = new Date(payload.travelEndDate);
   const today = new Date(); today.setHours(0,0,0,0);
   const min = new Date(today.getTime() + 30*24*60*60*1000);
   if (isNaN(start.getTime()) || start < min) {
@@ -399,11 +406,10 @@ $('permohonanForm').addEventListener('submit', async function(ev){
     $('submitBtn').disabled = false;
     return;
   }
-  // ensure end not beyond start+4
-  const end = new Date(payload.travelEndDate);
+  // enforce max 4 days duration
   const maxEnd = new Date(start.getTime() + 4*24*60*60*1000);
   if (isNaN(end.getTime()) || end < start || end > maxEnd) {
-    await Swal.fire({ icon:'error', title:'Tarikh tamat tidak sah', text:'Tarikh tamat mesti antara tarikh mula dan maksimum 4 hari selepas tarikh mula.' });
+    await Swal.fire({ icon:'error', title:'Tarikh tamat tidak sah', text:`Tarikh tamat mesti antara ${start.toISOString().slice(0,10)} dan ${maxEnd.toISOString().slice(0,10)}.` });
     $('submitBtn').disabled = false;
     return;
   }
@@ -441,57 +447,23 @@ $('permohonanForm').addEventListener('submit', async function(ev){
   }
 });
 
-/* ========== Tabs (updated IDs to match your HTML) ========== */
-$('tabIntroBtn').addEventListener('click', ()=>{
-  $('introSection').classList.remove('hidden');
-  $('formSection').classList.add('hidden');
-  $('officerSection').classList.add('hidden');
-  $('dpSection').classList.add('hidden');
-  $('queryResponseSection').classList.add('hidden');
-  $('downloadsSection').classList.add('hidden');
-});
-$('tabFormBtn').addEventListener('click', ()=>{
-  $('introSection').classList.add('hidden');
-  $('formSection').classList.remove('hidden');
-  $('officerSection').classList.add('hidden');
-  $('dpSection').classList.add('hidden');
-  $('queryResponseSection').classList.add('hidden');
-  $('downloadsSection').classList.add('hidden');
-});
-$('tabOfficerBtn').addEventListener('click', ()=>{
-  $('introSection').classList.add('hidden');
-  $('formSection').classList.add('hidden');
-  $('officerSection').classList.remove('hidden');
-  $('dpSection').classList.add('hidden');
-  $('queryResponseSection').classList.add('hidden');
-  $('downloadsSection').classList.add('hidden');
-});
-$('tabDPBtn').addEventListener('click', ()=>{
-  $('introSection').classList.add('hidden');
-  $('formSection').classList.add('hidden');
-  $('officerSection').classList.add('hidden');
-  $('dpSection').classList.remove('hidden');
-  $('queryResponseSection').classList.add('hidden');
-  $('downloadsSection').classList.add('hidden');
-});
-$('tabQueryResponseBtn').addEventListener('click', ()=>{
-  $('introSection').classList.add('hidden');
-  $('formSection').classList.add('hidden');
-  $('officerSection').classList.add('hidden');
-  $('dpSection').classList.add('hidden');
-  $('queryResponseSection').classList.remove('hidden');
-  $('downloadsSection').classList.add('hidden');
-});
-$('tabDownloadsBtn').addEventListener('click', ()=>{
+/* ========== Tabs handling ========== */
+function hideAllSections(){
   $('introSection').classList.add('hidden');
   $('formSection').classList.add('hidden');
   $('officerSection').classList.add('hidden');
   $('dpSection').classList.add('hidden');
   $('queryResponseSection').classList.add('hidden');
-  $('downloadsSection').classList.remove('hidden');
-});
+  $('downloadsSection').classList.add('hidden');
+}
+document.getElementById('tabIntroBtn').addEventListener('click', ()=>{ hideAllSections(); $('introSection').classList.remove('hidden'); });
+document.getElementById('tabFormBtn').addEventListener('click', ()=>{ hideAllSections(); $('formSection').classList.remove('hidden'); });
+document.getElementById('tabOfficerBtn').addEventListener('click', ()=>{ hideAllSections(); $('officerSection').classList.remove('hidden'); });
+document.getElementById('tabDPBtn').addEventListener('click', ()=>{ hideAllSections(); $('dpSection').classList.remove('hidden'); });
+document.getElementById('tabQueryResponseBtn').addEventListener('click', ()=>{ hideAllSections(); $('queryResponseSection').classList.remove('hidden'); });
+document.getElementById('tabDownloadsBtn').addEventListener('click', ()=>{ hideAllSections(); $('downloadsSection').classList.remove('hidden'); });
 
-/* ========== Pegawai: login & senarai (uses SweetAlert2) ========== */
+/* ========== Pegawai: login + filters + loadRequests ======= */
 let officerSecret = null;
 $('loginOfficer').addEventListener('click', async ()=>{
   const { value: pw } = await Swal.fire({
@@ -507,13 +479,49 @@ $('loginOfficer').addEventListener('click', async ()=>{
   try {
     const check = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
     const cj = await check.json();
-    if (cj.ok) { officerSecret = pw; await Swal.fire({icon:'success', title:'Login Pegawai berjaya'}); loadRequests(); } else await Swal.fire({icon:'error', title:'Kata laluan salah'});
+    if (cj.ok) {
+      officerSecret = pw;
+      await Swal.fire({icon:'success', title:'Login Pegawai berjaya'});
+      // enable filters
+      $('filterCategory').disabled = false;
+      $('filterPIC').disabled = false;
+      $('filterStatus').disabled = false;
+      $('applyFilters').disabled = false;
+      $('clearFilters').disabled = false;
+      await loadRequests();
+    } else {
+      await Swal.fire({icon:'error', title:'Kata laluan salah'});
+    }
   } catch (err) {
     await Swal.fire({icon:'error', title:'Ralat sambungan', text: err.message||''});
   }
 });
 
-/* Pegawai: load requests and render table with 'Surat' column */
+function populateFilterOptions(requests) {
+  const pis = new Set();
+  requests.forEach(r => {
+    if (r['OfficerPIC']) {
+      pis.add(String(r['OfficerPIC']).trim());
+    }
+  });
+  const picSel = $('filterPIC');
+  picSel.innerHTML = `<option value="">Semua PIC</option>`;
+  Array.from(pis).sort().forEach(p=>{
+    if (p) {
+      const opt = document.createElement('option');
+      opt.value = p; opt.text = p;
+      picSel.appendChild(opt);
+    }
+  });
+}
+$('applyFilters').addEventListener('click', ()=> loadRequests());
+$('clearFilters').addEventListener('click', ()=>{
+  $('filterCategory').value = '';
+  $('filterPIC').value = '';
+  $('filterStatus').value = '';
+  loadRequests();
+});
+
 async function loadRequests(){
   if (!officerSecret) return Swal.fire({icon:'warning', title:'Sila log masuk dahulu.'});
   try {
@@ -521,14 +529,23 @@ async function loadRequests(){
     const j = await res.json();
     if (!j.ok) return Swal.fire({icon:'error', title:'Gagal', text: j.message || ''});
     const requests = j.requests;
+
+    populateFilterOptions(requests);
+
+    const selCategory = $('filterCategory').value;
+    const selPIC = $('filterPIC').value;
+    const selStatus = $('filterStatus').value;
+
     const table = document.createElement('table'); table.className='w-full text-sm';
     table.innerHTML = `<thead><tr class="bg-gray-100">
       <th class="p-2">ID</th><th>Nama Sekolah</th><th>Tarikh</th><th>Status</th><th>Surat</th><th>Tindakan</th></tr></thead>`;
     const tb = document.createElement('tbody');
 
     for (const req of requests) {
-      const filter = $('filterCategory').value;
-      if (filter && req['Category'] !== filter) continue;
+      if (selCategory && String(req['Category']||req['category']||'') !== selCategory) continue;
+      if (selPIC && String(req['OfficerPIC']||'') !== selPIC) continue;
+      if (selStatus && String(req['Status']||'') !== selStatus) continue;
+
       const tr = document.createElement('tr'); tr.className='border-b';
       const travelDate = req['Travel Start'] || req['TravelStart'] || '';
       let suratDisplay = '';
@@ -551,7 +568,7 @@ async function loadRequests(){
 
       const td = document.createElement('td'); td.className='p-2';
 
-      // VIEW button -> show all 5 files in a modal (via Swal)
+      // VIEW button -> show all 5 files
       const viewBtn = document.createElement('button');
       viewBtn.className='px-2 py-1 border rounded mr-2';
       viewBtn.textContent='LIHAT FAIL';
@@ -564,13 +581,7 @@ async function loadRequests(){
           {label:'INTIPATI TAKLIMAT', url: req['File_TAKLIMAT']}
         ];
         const html = files.map(f => f.url ? `<p><strong>${f.label}:</strong> <a href="${f.url}" target="_blank">Buka</a></p>` : `<p><strong>${f.label}:</strong> <em>Tiada fail</em></p>`).join('');
-        Swal.fire({
-          title: 'Fail Permohonan',
-          html,
-          width: 700,
-          showCloseButton: true,
-          confirmButtonText: 'Tutup'
-        });
+        Swal.fire({ title: 'Fail Permohonan', html, width:700, showCloseButton:true, confirmButtonText:'Tutup' });
       });
 
       // QUERY button -> ask note then call officerAction(type=query)
@@ -587,10 +598,10 @@ async function loadRequests(){
           cancelButtonText: 'Batal'
         });
         if (!note) return;
-        await sendOfficerAction(req['Request ID'], 'query', note);
+        await sendOfficerAction(req['Request ID'], 'query', note, $('filterPIC').value || 'Menengah');
       });
 
-      // PREAPPROVE (Generate Letters) -> ask for jilid / bil surat / tarikh
+      // PREAPPROVE (Generate Letters) -> ask for jilid / bil surat / tarikh / PIC
       const preapproveBtn = document.createElement('button');
       preapproveBtn.className='px-2 py-1 bg-green-600 text-white rounded';
       preapproveBtn.textContent='Lulus (Jana Surat)';
@@ -598,7 +609,10 @@ async function loadRequests(){
         const { value: formValues } = await Swal.fire({
           title: 'Jana Surat Kelulusan',
           html:
-            `<input id="swal_noJilid" class="swal2-input" placeholder="No Jilid (e.g. 24)"><input id="swal_bilSurat" class="swal2-input" placeholder="Bil Surat (angka, e.g. 25)"><input id="swal_tarikhSurat" type="date" class="swal2-input">`,
+            `<input id="swal_noJilid" class="swal2-input" placeholder="No Jilid (e.g. 24)">
+             <input id="swal_bilSurat" class="swal2-input" placeholder="Bil Surat (angka, e.g. 25)">
+             <input id="swal_tarikhSurat" type="date" class="swal2-input">
+             <input id="swal_pic" class="swal2-input" placeholder="Nama PIC yang urus (contoh: Ahmad)">`,
           focusConfirm: false,
           showCancelButton: true,
           confirmButtonText: 'Jana Surat',
@@ -606,18 +620,21 @@ async function loadRequests(){
             const noJilid = document.getElementById('swal_noJilid').value;
             const bilSurat = document.getElementById('swal_bilSurat').value;
             const tarikhSurat = document.getElementById('swal_tarikhSurat').value || new Date().toISOString().slice(0,10);
+            const pic = document.getElementById('swal_pic').value || '';
             if (!noJilid || !bilSurat) {
               Swal.showValidationMessage('Sila isi No Jilid dan Bil Surat');
               return false;
             }
-            return { noJilid, bilSurat, tarikhSurat };
+            return { noJilid, bilSurat, tarikhSurat, pic };
           }
         });
         if (!formValues) return;
-        // mark preapprove first (so status changes)
-        const ok1 = await sendOfficerAction(req['Request ID'],'preapprove','', req['Category'] || 'Menengah');
+
+        // set preapprove with PIC first
+        const ok1 = await sendOfficerAction(req['Request ID'],'preapprove','', formValues.pic || 'Menengah');
         if (!ok1) return;
-        // call generateLetters to create PDFs and write jilid/bil into sheet
+
+        // call generateLetters
         try {
           const url = GAS_URL + '?action=generateLetters&id=' + encodeURIComponent(req['Request ID']) + '&secret=' + encodeURIComponent(officerSecret) + '&noJilid=' + encodeURIComponent(formValues.noJilid) + '&bilSurat=' + encodeURIComponent(formValues.bilSurat) + '&tarikhSurat=' + encodeURIComponent(formValues.tarikhSurat);
           const r = await fetch(url);
@@ -708,9 +725,9 @@ async function loadDpList(){
   }
 }
 
-/* ========== Query Response (sekolah) ========== */
+/* ========== Query response (sekolah tanpa login) ========== */
 $('sendQueryResponseBtn').addEventListener('click', async ()=>{
-  const queryId = $('respQueryId').value.trim();
+  const queryId = $('respQueryId').value && $('respQueryId').value.trim();
   if (!queryId) return Swal.fire({icon:'error', title:'Sila masukkan Query ID'});
   showLoading();
   try {
@@ -722,30 +739,25 @@ $('sendQueryResponseBtn').addEventListener('click', async ()=>{
       taklimat: $('resp_file_taklimat').files[0],
     };
     const filesBase64 = {};
-    for (const key in fileMap) if (fileMap[key]) filesBase64[key] = await fileToBase64(fileMap[key]);
-
-    const body = JSON.stringify({ type:'queryResponse', payload:{ queryId, schoolEmail: $('respSchoolEmail').value.trim() }, filesBase64 });
-    const res = await fetch(GAS_URL, { method:'POST', body });
-    const j = await res.json();
+    for (const key in fileMap) {
+      if (fileMap[key]) filesBase64[key] = await fileToBase64(fileMap[key]);
+    }
+    const body = JSON.stringify({ type: 'queryResponse', payload:{ queryId, schoolEmail: $('respSchoolEmail').value.trim() }, filesBase64 });
+    const r = await fetch(GAS_URL, { method:'POST', body });
+    const j = await r.json();
     hideLoading();
-    if (j.ok) { await Swal.fire({icon:'success', title:'Respon Query diterima'}); $('respQueryId').value=''; } 
-    else await Swal.fire({icon:'error', title:'Gagal', text: j.message || JSON.stringify(j)});
+    if (j.ok) {
+      await Swal.fire({ icon:'success', title:'Respon query diterima' });
+      $('respQueryId').value=''; $('respSchoolEmail').value='';
+      ['resp_file_kertasKerja','resp_file_maklumatAnggota','resp_file_permitBas','resp_file_lesenPemandu','resp_file_taklimat'].forEach(id=>{ if($(id)) $(id).value=''; });
+    } else {
+      await Swal.fire({ icon:'error', title:'Gagal', text: j.message || JSON.stringify(j) });
+    }
   } catch (err) {
     hideLoading();
-    await Swal.fire({icon:'error', title:'Ralat', text: err.message||''});
+    await Swal.fire({ icon:'error', title:'Ralat', text: err.message||'' });
   }
 });
-
-/* Optional: init show form tab */
-(function init(){
-  // show form by default
-  $('introSection').classList.add('hidden');
-  $('formSection').classList.remove('hidden');
-  $('officerSection').classList.add('hidden');
-  $('dpSection').classList.add('hidden');
-  $('queryResponseSection').classList.add('hidden');
-  $('downloadsSection').classList.add('hidden');
-})();
 </script>
 
 </body>
