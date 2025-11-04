@@ -21,14 +21,14 @@
 <body class="bg-gray-100 text-gray-800">
 
   <div class="flex">
-  <aside class="sidebar w-64 p-6">
-    <div class="flex flex-col items-center gap-3 mb-6">
-      <img id="logoImg" src="IMAGE2.png" alt="Logo JPN" class="w-12 h-12 object-contain">
-      <div class="text-center">
-        <div class="text-xl font-bold">LAWATAN MURID</div>
-        <div class="text-xs text-gray-300">SPS JPN PAHANG</div>
+    <aside class="sidebar w-64 p-6">
+      <div class="flex items-center gap-3 mb-6">
+        <img id="logoImg" src="IMAGE2.png" alt="Logo JPN" class="w-12 h-12 object-contain">
+        <div>
+          <div class="text-xl font-bold">LAWATAN MURID</div>
+          <div class="text-xs text-gray-300">e-SPA Lawatan — JPN Pahang</div>
+        </div>
       </div>
-    </div>
 
       <nav class="space-y-2">
         <button id="tabIntroBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800 nav-tab">Pengenalan</button>
@@ -43,9 +43,9 @@
     </aside>
 
     <main class="flex-1 p-8">
-  <div class="mb-6">
-    <img id="headerImg" src="IMAGE1.jpg" alt="Header" class="w-full rounded-lg shadow-sm object-contain" style="max-height:140px;">
-  </div>
+      <div class="mb-6">
+        <img id="headerImg" src="IMAGE1.png" alt="Header" class="w-full rounded-lg shadow-sm object-cover" style="max-height:140px;">
+      </div>
 
       <section id="introSection" class="bg-white p-6 rounded shadow mb-6 hidden">
         <h2 class="text-2xl font-semibold mb-2">Selamat Datang ke Portal LAWATAN MURID</h2>
@@ -389,8 +389,8 @@ function extractQueries(req){
   if (Array.isArray(req['QueryHistory']) && req['QueryHistory'].length) {
     return req['QueryHistory'].map(q=>({
       id: q.id || q.QueryID || q.queryId || '',
-      sentDate: q.sentDate || q.sent_at || q.date || '',
-      respondedDate: q.respondedDate || q.responded_at || q.response_date || '',
+      sentDate: q.sentDate || q.QuerySentDate || q.sent_at || q.date || '',
+      respondedDate: q.respondedDate || q.QueryRespondDate || q.responded_at || q.response_date || '',
       note: q.note || q.note_text || q.message || ''
     }));
   }
@@ -407,7 +407,7 @@ function extractQueries(req){
     }
   }
   if (req['QueryID'] && !queries.find(q=>q.id===req['QueryID'])) {
-    queries.push({ id: req['QueryID'], sentDate: req['QueryDate']||'', respondedDate: req['QueryRespondedDate']||'', note: req['OfficerNote']||'' });
+    queries.push({ id: req['QueryID'], sentDate: req['QueryDate']||'', respondedDate: req['QueryRespondDate']||'', note: req['OfficerNote']||'' });
   }
   return queries;
 }
@@ -460,9 +460,7 @@ function renderTablesFromCache(){
     const noSurat = req['NoSuratFull'] || (req['Letters'] ? `Surat dijana (${String(req['Letters']).split(/\s*;\s*/).filter(Boolean).length})` : (req['OfficerNote'] && (String(req['OfficerNote']).match(/QueryID:([A-Z0-9\-\_]+)/i) || [])[1] ? `Query: ${(String(req['OfficerNote']).match(/QueryID:([A-Z0-9\-\_]+)/i)||[])[1]}` : '-'));
 
     // single "Lihat Fail" + other actions
-    const actionsGeneric = `<div class="flex gap-2">
-        <button data-id="${id}" class="view-files px-2 py-1 border rounded text-xs">Lihat Fail</button>
-      </div>`;
+    const actionsGeneric = `<div class="flex gap-2"><button data-id="${id}" class="view-files px-2 py-1 border rounded text-xs">Lihat Fail</button></div>`;
     const actionsWithOfficerBtns = `<div class="flex gap-2">
         <button data-id="${id}" class="view-files px-2 py-1 border rounded text-xs">Lihat Fail</button>
         <button data-id="${id}" class="btn-query px-2 py-1 bg-yellow-400 rounded text-xs">Query</button>
@@ -520,9 +518,9 @@ function renderTablesFromCache(){
       newRows.push({
         'Kod Sekolah': kodSek,
         'Nama Sekolah': school,
+        'Nama Ketua & No Tel': firstLeader || '',
         'Kategori': req['Category'] || req['category'] || '',
         'Tarikh': fmtDateToDisplay(travelStart),
-        'Nama Ketua & No Tel': firstLeader || '',
         'Status': status,
         'Surat': noSurat,
         'Tindakan': actionsWithOfficerBtns
@@ -640,7 +638,7 @@ $('loginDP').addEventListener('click', async ()=>{
     const res = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
     const j = await res.json(); hideLoading();
     if (j.ok) { dpSecret = pw; Swal.fire({icon:'success',title:'Login Timbalan berjaya'}); loadDpList(); } else Swal.fire({icon:'error',title:'Kata laluan salah'});
-  } catch (err){ hideLoading(); Swal.fire({icon:'error',title:'Ralat sambungan',text:err.message||''}); }
+  } catch (err){ hideLoading(); Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); }
 });
 
 async function loadDpList(){
@@ -704,10 +702,13 @@ $('sendQueryResponseBtn').addEventListener('click', async ()=>{
               kertasKerja: 'File_KERTAS_KERJA',
               maklumatAnggota: 'File_MAKLUMAT_ANGGOTA',
               permitBas: 'File_PERMIT_BAS',
+              lesenPemandu: 'File_PERMIT_BAS'==='File_PERMIT_BAS'? 'File_PERMIT_BAS' : 'File_LESEN_PEMANDU',
               lesenPemandu: 'File_LESEN_PEMANDU',
               taklimat: 'File_TAKLIMAT'
             }[k] || k;
-            target[mapKey] = files[k];
+            // if existing is present, append with ' ; '
+            const existing = String(target[mapKey]||'').trim();
+            target[mapKey] = existing ? (existing + ' ; ' + files[k]) : files[k];
           });
           // set status to QUERY_RESPONDED (or server-provided)
           target['Status'] = j.status || 'QUERY_RESPONDED';
@@ -743,7 +744,6 @@ $('sendQueryResponseBtn').addEventListener('click', async ()=>{
     Swal.fire({icon:'error',title:'Ralat',text:err.message||''});
   }
 });
-
 
 // Initial render: if any cached data exist, render
 renderTablesFromCache();
