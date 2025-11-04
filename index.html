@@ -263,102 +263,194 @@
       <section id="downloadsSection" class="hidden bg-white p-6 rounded shadow mb-6">
   <h2 class="text-xl font-semibold mb-4">Muat Turun</h2>
 
-  <!-- Grid kad (responsive) -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 xl-cards-gap">
-    <!-- Kad 1 -->
+  <style>
+    /* Download cards premium — local styles */
+    #downloadsSection .downloads-grid {
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);
+      gap: 1rem;
+    }
+    @media (min-width: 640px){ #downloadsSection .downloads-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 768px){ #downloadsSection .downloads-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1024px){ #downloadsSection .downloads-grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (min-width: 1280px){ #downloadsSection .downloads-grid { grid-template-columns: repeat(5, 1fr); } }
+
+    #downloadsSection .download-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 140px;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(15,23,42,0.05);
+      background: linear-gradient(180deg, #ffffff, #fbfbfd);
+      transition: transform .16s ease, box-shadow .16s ease;
+      box-shadow: 0 2px 8px rgba(16,24,40,0.04);
+    }
+    #downloadsSection .download-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 30px rgba(16,24,40,0.12);
+    }
+
+    /* Title + description */
+    #downloadsSection .download-title {
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 6px;
+      font-size: 1rem;
+    }
+    #downloadsSection .download-desc {
+      margin: 0;
+      color: #6b7280;
+      font-size: 0.92rem;
+      line-height: 1.25;
+    }
+
+    /* Left accent bar (small) */
+    #downloadsSection .accent {
+      width: 6px;
+      border-radius: 6px;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    .accent--red { background: linear-gradient(180deg,#F97373,#DC2626); }
+    .accent--blue { background: linear-gradient(180deg,#60A5FA,#2563EB); }
+    .accent--teal { background: linear-gradient(180deg,#34D399,#059669); }
+    .accent--orange { background: linear-gradient(180deg,#FDBA74,#F97316); }
+    .accent--purple { background: linear-gradient(180deg,#C4B5FD,#7C3AED); }
+
+    /* Horizontal layout inside card */
+    #downloadsSection .card-head { display:flex; align-items:flex-start; gap:12px; }
+
+    /* Buttons */
+    #downloadsSection .download-actions { margin-top: 12px; display: flex; gap:8px; }
+    #downloadsSection .download-btn {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 0;
+      transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+    }
+    #downloadsSection .download-btn-primary {
+      background: linear-gradient(180deg,#2563EB,#1D4ED8);
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(37,99,235,0.12);
+    }
+    #downloadsSection .download-btn-primary:hover { transform: translateY(-3px); opacity: 0.98; }
+    #downloadsSection .download-btn-secondary {
+      background: #F3F4F6;
+      color: #0f172a;
+      border: 1px solid rgba(15,23,42,0.06);
+    }
+    #downloadsSection .download-btn-secondary:hover { transform: translateY(-3px); box-shadow: 0 8px 18px rgba(15,23,42,0.06); }
+
+    /* small helper for multi-button card */
+    #downloadsSection .download-actions.column { flex-direction: column; }
+  </style>
+
+  <div class="downloads-grid">
+
+    <!-- Card 1 -->
     <div class="download-card">
-      <div class="flex items-start gap-4">
-        <div class="pdf-icon" aria-hidden="true">
-          <!-- small stacked PDF icon -->
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="3" y="3" width="14" height="18" rx="2" fill="#fff" opacity="0.06"/>
-            <path d="M7 7h6v2H7zM7 11h6v2H7zM7 15h4v2H7z" fill="#fff"/>
-          </svg>
-        </div>
+      <div class="card-head">
+        <div class="accent accent--red" aria-hidden="true"></div>
         <div>
           <div class="download-title">SENARAI SEMAK</div>
-          <p class="download-desc">Senarai Semak Permohonan Lawatan Terkini 2025 Dalam Dan Luar Negeri.</p>
+          <p class="download-desc">Senarai Semak Permohonan Lawatan Terkini 2025 — panduan rujukan.</p>
         </div>
       </div>
       <div class="download-actions">
         <button data-link="https://drive.google.com/file/d/1rNUmrYzOBM-96OkpjDGBmUsgCQx1jcGZ/view?usp=sharing"
-                class="download-btn download-btn-primary w-full" title="Buka Senarai Semak">Muat Turun</button>
+                class="download-btn download-btn-primary" title="Buka Senarai Semak">Muat Turun</button>
       </div>
     </div>
 
-    <!-- Kad 2 -->
+    <!-- Card 2 -->
     <div class="download-card">
-      <div class="flex items-start gap-4">
-        <div class="pdf-icon" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="14" height="18" rx="2" fill="#fff" opacity="0.06"/><path d="M7 7h6v2H7zM7 11h6v2H7zM7 15h4v2H7z" fill="#fff"/></svg>
-        </div>
+      <div class="card-head">
+        <div class="accent accent--blue" aria-hidden="true"></div>
         <div>
           <div class="download-title">Kertas Kerja</div>
-          <p class="download-desc">SPK Bil 1. 2021 Lampiran 7</p>
+          <p class="download-desc">SPK Bil 1 — Lampiran & contoh kertas kerja.</p>
         </div>
       </div>
       <div class="download-actions">
         <button data-link="https://drive.google.com/file/d/1dxj1uCowSiFcAp80MGVHD10En-UMQrvw/view?usp=sharing"
-                class="download-btn download-btn-primary w-full" title="Buka Kertas Kerja">Muat Turun</button>
+                class="download-btn download-btn-primary" title="Buka Kertas Kerja">Muat Turun</button>
       </div>
     </div>
 
-    <!-- Kad 3 -->
+    <!-- Card 3 -->
     <div class="download-card">
-      <div class="flex items-start gap-4">
-        <div class="pdf-icon" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="14" height="18" rx="2" fill="#fff" opacity="0.06"/><path d="M7 7h6v2H7zM7 11h6v2H7zM7 15h4v2H7z" fill="#fff"/></svg>
-        </div>
+      <div class="card-head">
+        <div class="accent accent--teal" aria-hidden="true"></div>
         <div>
           <div class="download-title">Lampiran A</div>
-          <p class="download-desc">Borang Lawatan Murid Sekolah _ SPI BIL.9 THN 2023 LAMPIRAN A.</p>
+          <p class="download-desc">Borang Lawatan Murid — Lampiran A (borang rasmi).</p>
         </div>
       </div>
       <div class="download-actions">
         <button data-link="https://drive.google.com/file/d/1RhUVrDDSTsFACgd4QHgzzqqkbNefuRxE/view?usp=drive_link"
-                class="download-btn download-btn-primary w-full" title="Buka Lampiran A">Muat Turun</button>
+                class="download-btn download-btn-primary" title="Buka Lampiran A">Muat Turun</button>
       </div>
     </div>
 
-    <!-- Kad 4 (mengandungi 2 butang muat turun) -->
+    <!-- Card 4 (two buttons) -->
     <div class="download-card">
-      <div class="flex items-start gap-4">
-        <div class="pdf-icon" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="14" height="18" rx="2" fill="#fff" opacity="0.06"/><path d="M7 7h6v2H7zM7 11h6v2H7zM7 15h4v2H7z" fill="#fff"/></svg>
-        </div>
+      <div class="card-head">
+        <div class="accent accent--orange" aria-hidden="true"></div>
         <div>
           <div class="download-title">SPI</div>
-          <p class="download-desc">Surat Pekeliling Ikhtisas Kementerian Pendidikan Malaysia.</p>
+          <p class="download-desc">Surat Pekeliling Ikhtisas KPM — pilih pekeliling yang dikehendaki.</p>
         </div>
       </div>
-      <div class="download-actions flex gap-3">
+      <div class="download-actions column">
         <button data-link="https://drive.google.com/file/d/1OouJG3DcWHQhc4fLvo_dDqVA6zx_A6ay/view?usp=sharing"
-                class="download-btn download-btn-primary flex-1" title="Buka SPI KPM BIL 3 2019">SPI KPM BIL 3 2019</button>
+                class="download-btn download-btn-primary" title="SPI KPM Bil 3 2019">SPI KPM Bil 3 / 2019</button>
         <button data-link="https://drive.google.com/file/d/1VBd0YKVbYZ8KW-eFPizVh26KlifSfqRS/view?usp=sharing"
-                class="download-btn download-btn-secondary flex-1" title="Buka SPI KPM BIL 9 2023">SPI KPM BIL 9 2023</button>
+                class="download-btn download-btn-secondary" title="SPI KPM Bil 9 2023">SPI KPM Bil 9 / 2023</button>
       </div>
     </div>
 
-    <!-- Kad 5 -->
+    <!-- Card 5 -->
     <div class="download-card">
-      <div class="flex items-start gap-4">
-        <div class="pdf-icon" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="14" height="18" rx="2" fill="#fff" opacity="0.06"/><path d="M7 7h6v2H7zM7 11h6v2H7zM7 15h4v2H7z" fill="#fff"/></svg>
-        </div>
+      <div class="card-head">
+        <div class="accent accent--purple" aria-hidden="true"></div>
         <div>
           <div class="download-title">Permohonan Kelulusan</div>
-          <p class="download-desc">Surat Permohonan Kelulusan Kutipan Lawatan.</p>
+          <p class="download-desc">Surat Permohonan Kelulusan — format standard untuk muat turun.</p>
         </div>
       </div>
       <div class="download-actions">
         <button data-link="https://drive.google.com/file/d/1IbmtO2sCAvnPcjzqU0EaQKLPa5KGjrzT/view?usp=sharing"
-                class="download-btn download-btn-primary w-full" title="Buka Permohonan Kelulusan">Muat Turun</button>
+                class="download-btn download-btn-primary" title="Muat Turun Permohonan Kelulusan">Muat Turun</button>
       </div>
     </div>
+
   </div>
 
-  <div class="mt-4 text-xs text-gray-500">Tekan butang untuk membuka fail dalam tab baru. (Edit `data-link` pada setiap butang untuk pautan sebenar.)</div>
+  <div class="mt-4 text-xs text-gray-500">Tekan butang untuk membuka fail dalam tab baru. (Edit <code>data-link</code> pada setiap butang untuk pautan sebenar.)</div>
+
+  <script>
+    // handler: buka link baru — keep inside section so replacing is easy
+    (function(){
+      const btns = document.querySelectorAll('#downloadsSection .download-btn');
+      btns.forEach(b=>{
+        b.addEventListener('click', e=>{
+          const url = e.currentTarget.getAttribute('data-link') || '#';
+          if (!url || url === '#') {
+            Swal.fire({ icon: 'info', title: 'Tiada fail', text: 'Pautan muat turun belum dikonfigurasikan.' });
+            return;
+          }
+          window.open(url, '_blank');
+        });
+      });
+    })();
+  </script>
 </section>
+
 
 <!-- handler untuk butang muat turun di Downloads section -->
 <script>
