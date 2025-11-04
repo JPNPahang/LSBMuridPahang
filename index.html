@@ -16,6 +16,7 @@
     .tab-active { background:#2563eb !important; color:#fff !important; } /* bg-blue-600 like */
     #filesModal { z-index: 60; }
     table { table-layout: auto; width: 100%; }
+    td { vertical-align: top; }
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -425,7 +426,10 @@ function renderTablesFromCache(){
   }
 
   requests.forEach(req => {
-    if (selCategory && String(req['Category']||req['category']||req['Kategori']||req['kategori']||'') !== selCategory) return;
+    // category also may be stored under OfficerPIC — accept that as fallback
+    const reqCategory = req['Category'] || req['category'] || req['Kategori'] || req['kategori'] || req['OfficerPIC'] || '';
+
+    if (selCategory && String(reqCategory) !== selCategory) return;
     if (selStatus && String(req['Status']||'') !== selStatus) return;
     if (!matchesSearch(req)) return;
 
@@ -433,41 +437,23 @@ function renderTablesFromCache(){
     const kodSek = req['School Code'] || req['SchoolCode'] || req['schoolCode'] || '';
     const school = req['School Name'] || req['SchoolName'] || req['schoolName'] || '';
 
-    // derive leader info (best-effort) — return object {name,phone}
-    const firstLeaderObj = (() => {
-      try {
-        let ln = req['LeaderNames'] || req['LeaderNames'] || req['LeaderName'] || req['Leader'] || req['leaderNames'] || '';
-        let lp = req['LeaderPhones'] || req['LeaderPhones'] || req['LeaderPhone'] || req['LeaderTel'] || req['leaderPhones'] || '';
+    // derive leader info -> produce arrays and join with <br/>
+    let lnRaw = req['LeaderNames'] || req['LeaderName'] || req['leaderNames'] || '';
+    let lpRaw = req['LeaderPhones'] || req['LeaderPhone'] || req['leaderPhones'] || '';
+    let lnArr = [], lpArr = [];
+    try {
+      if (typeof lnRaw === 'string' && lnRaw.trim().startsWith('[')) lnArr = JSON.parse(lnRaw);
+      else if (Array.isArray(lnRaw)) lnArr = lnRaw;
+      else if (lnRaw) lnArr = [lnRaw];
+    } catch(e){ lnArr = Array.isArray(lnRaw)? lnRaw: (lnRaw? [lnRaw]:[]); }
+    try {
+      if (typeof lpRaw === 'string' && lpRaw.trim().startsWith('[')) lpArr = JSON.parse(lpRaw);
+      else if (Array.isArray(lpRaw)) lpArr = lpRaw;
+      else if (lpRaw) lpArr = [lpRaw];
+    } catch(e){ lpArr = Array.isArray(lpRaw)? lpRaw: (lpRaw? [lpRaw]:[]); }
 
-        if (typeof ln === 'string' && ln.trim().startsWith('[')) {
-          try { ln = JSON.parse(ln); } catch(e){}
-        }
-        if (typeof lp === 'string' && lp.trim().startsWith('[')) {
-          try { lp = JSON.parse(lp); } catch(e){}
-        }
-
-        if (Array.isArray(ln) && ln.length) {
-          const name = ln[0] || '';
-          const phone = (Array.isArray(lp) && lp.length) ? lp[0] : (typeof lp === 'string' ? lp : '');
-          return { name: name||'', phone: phone||'' };
-        }
-
-        if (ln && typeof ln === 'object' && ln[0]) {
-          const name = ln[0].name || ln[0];
-          const phone = (lp && lp[0] && lp[0].phone) ? lp[0].phone : '';
-          return { name: name||'', phone: phone||'' };
-        }
-
-        if (typeof ln === 'string' && ln.trim()) {
-          const name = ln;
-          const phone = (typeof lp === 'string' && lp.trim()) ? lp : '';
-          return { name: name||'', phone: phone||'' };
-        }
-      } catch(e){}
-      const n = req['LeaderName'] || req['Leader'] || req['LeaderFullName'] || '';
-      const p = req['LeaderPhone'] || req['LeaderTel'] || req['LeaderTelephone'] || '';
-      return { name: n||'', phone: p||'' };
-    })();
+    const namaKetuaDisplay = lnArr.map(x=>String(x).trim()).filter(Boolean).join('<br/>');
+    const noTelDisplay = lpArr.map(x=>String(x).trim()).filter(Boolean).join('<br/>');
 
     const travelStart = req['Travel Start'] || req['TravelStart'] || req['travelStart'] || '';
     const status = req['Status'] || '';
@@ -487,9 +473,9 @@ function renderTablesFromCache(){
         const qRow = {
           'Kod Sekolah': kodSek,
           'Nama Sekolah': school,
-          'Kategori': req['Category'] || req['category'] || req['Kategori'] || req['kategori'] || '',
+          'Kategori': reqCategory || '',
           'Tarikh Query': fmtDateToDisplay(req['QuerySentDate'] || req['QueryDate'] || req['Query Sent'] || req['QuerySent'] || ''),
-          'Tarikh Respon': fmtDateToDisplay(req['QueryRespondDate'] || req['QueryRespondedDate'] || req['QueryResponseDate'] || ''),
+          'Tarikh Respon': fmtDateToDisplay(req['QueryRespondDate'] || req['QueryRespondedDate'] || req['QueryResponseDate'] || req['QueryRespondDate'] || ''),
           'Catatan Query': (req['OfficerNote']||req['OfficerNotes']||''),
           'Kod Query': req['QueryID'] || '',
           'Status': status,
@@ -502,9 +488,9 @@ function renderTablesFromCache(){
           queryRows.push({
             'Kod Sekolah': kodSek,
             'Nama Sekolah': school,
-            'Kategori': req['Category'] || req['category'] || req['Kategori'] || req['kategori'] || '',
-            'Tarikh Query': fmtDateToDisplay(q.sentDate),
-            'Tarikh Respon': fmtDateToDisplay(q.respondedDate),
+            'Kategori': reqCategory || '',
+            'Tarikh Query': fmtDateToDisplay(q.sentDate || req['QuerySentDate'] || ''),
+            'Tarikh Respon': fmtDateToDisplay(q.respondedDate || req['QueryRespondDate'] || ''),
             'Catatan Query': q.note || '',
             'Kod Query': q.id || '',
             'Status': status,
@@ -521,7 +507,7 @@ function renderTablesFromCache(){
       approvedRows.push({
         'Kod Sekolah': kodSek,
         'Nama Sekolah': school,
-        'Kategori': req['Category'] || req['category'] || req['Kategori'] || req['kategori'] || '',
+        'Kategori': reqCategory || '',
         'Tarikh Surat Lulus': fmtDateToDisplay(letterDate || req['GeneratedDate'] || req['NoSuratDate'] || ''),
         'Link Surat': letterLink,
         'Status': status,
@@ -532,9 +518,9 @@ function renderTablesFromCache(){
       newRows.push({
         'Kod Sekolah': kodSek,
         'Nama Sekolah': school,
-        'Nama Ketua': firstLeaderObj.name || '',
-        'No Tel Ketua': firstLeaderObj.phone || '',
-        'Kategori': req['Category'] || req['category'] || req['Kategori'] || req['kategori'] || '',
+        'Nama Ketua': namaKetuaDisplay || '',
+        'No Tel Ketua': noTelDisplay || '',
+        'Kategori': reqCategory || '',
         'Tarikh': fmtDateToDisplay(travelStart),
         'Status': status,
         'Surat': noSurat,
@@ -722,7 +708,6 @@ $('sendQueryResponseBtn').addEventListener('click', async ()=>{
             target[mapKey] = existing ? (existing + ' ; ' + files[k]) : files[k];
           });
           target['Status'] = j.status || 'QUERY_RESPONDED';
-          // also update QuerySentDate/QueryRespondDate if server provided
           if (j.QuerySentDate) target['QuerySentDate'] = j.QuerySentDate;
           if (j.QueryRespondDate) target['QueryRespondDate'] = j.QueryRespondDate;
           Swal.fire({icon:'success',title:'Respon query diterima',text:'Fail digabungkan dengan permohonan sedia ada.'});
