@@ -17,6 +17,45 @@
     #filesModal { z-index: 60; }
     table { table-layout: auto; width: 100%; }
     td { vertical-align: top; }
+
+    /* === Styling improvements for Downloads cards and file inputs === */
+    .download-card {
+      border-radius: 0.75rem; /* rounded-lg */
+      border: 1px solid #e6e6e6;
+      background: #fff;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: box-shadow .18s ease, transform .08s ease;
+    }
+    .download-card:hover { box-shadow: 0 10px 25px rgba(16,24,40,0.08); transform: translateY(-3px); }
+    .pdf-icon {
+      width: 44px; height: 44px; border-radius: 8px; display:flex; align-items:center; justify-content:center;
+      background:#E53E3E; color:#fff; flex-shrink:0;
+    }
+    .download-title { font-weight: 600; font-size: 1rem; color: #111827; }
+    .download-desc { color: #4b5563; font-size: .92rem; line-height:1.35; margin-top:.5rem; }
+
+    .download-actions { margin-top: .75rem; }
+    .download-btn { display:inline-flex; align-items:center; justify-content:center; gap: .5rem; cursor:pointer; }
+    .download-btn-primary { background:#2563eb; color:#fff; padding:.6rem .9rem; border-radius:0.5rem; font-weight:600; }
+    .download-btn-secondary { background:#f3f4f6; color:#111827; padding:.56rem .85rem; border-radius:0.5rem; font-weight:600; border:1px solid #e5e7eb; }
+
+    /* make file input buttons consistent and tidy - uses native ::file-selector-button where supported */
+    input[type="file"]::file-selector-button {
+      margin-right: .5rem;
+      padding: .35rem .6rem;
+      border-radius: .35rem;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    /* small responsive tweak for long descriptions */
+    @media (min-width: 1280px) {
+      .xl-cards-gap { gap: 1.25rem; }
+    }
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -90,29 +129,29 @@
   <label class="block text-sm font-semibold mb-2 text-gray-700">Muat Naik Fail (PDF) — ikut kategori (5 fail)</label>
 
   <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition">
+    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition download-card">
       <label for="file_kertasKerja" class="block text-sm font-medium mb-1 text-gray-700">KERTAS KERJA</label>
-      <input type="file" id="file_kertasKerja" name="kertasKerja" accept="application/pdf" class="block w-full text-sm text-gray-700 file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-gray-300 file:bg-white file:hover:bg-gray-200"/>
+      <input type="file" id="file_kertasKerja" name="kertasKerja" accept="application/pdf" class="block w-full text-sm text-gray-700"/>
     </div>
 
-    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition">
+    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition download-card">
       <label for="file_maklumatAnggota" class="block text-sm font-medium mb-1 text-gray-700">MAKLUMAT ANGGOTA</label>
-      <input type="file" id="file_maklumatAnggota" name="maklumatAnggota" accept="application/pdf" class="block w-full text-sm text-gray-700 file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-gray-300 file:bg-white file:hover:bg-gray-200"/>
+      <input type="file" id="file_maklumatAnggota" name="maklumatAnggota" accept="application/pdf" class="block w-full text-sm text-gray-700"/>
     </div>
 
-    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition">
+    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition download-card">
       <label for="file_permitBas" class="block text-sm font-medium mb-1 text-gray-700">PERMIT BAS/KENDERAAN</label>
-      <input type="file" id="file_permitBas" name="permitBas" accept="application/pdf" class="block w-full text-sm text-gray-700 file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-gray-300 file:bg-white file:hover:bg-gray-200"/>
+      <input type="file" id="file_permitBas" name="permitBas" accept="application/pdf" class="block w-full text-sm text-gray-700"/>
     </div>
 
-    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition">
+    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition download-card">
       <label for="file_lesenPemandu" class="block text-sm font-medium mb-1 text-gray-700">LESEN PEMANDU</label>
-      <input type="file" id="file_lesenPemandu" name="lesenPemandu" accept="application/pdf" class="block w-full text-sm text-gray-700 file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-gray-300 file:bg-white file:hover:bg-gray-200"/>
+      <input type="file" id="file_lesenPemandu" name="lesenPemandu" accept="application/pdf" class="block w-full text-sm text-gray-700"/>
     </div>
 
-    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition col-span-2 md:col-span-3">
+    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition download-card col-span-2 md:col-span-3">
       <label for="file_taklimat" class="block text-sm font-medium mb-1 text-gray-700">INTIPATI TAKLIMAT KESELAMATAN</label>
-      <input type="file" id="file_taklimat" name="taklimat" accept="application/pdf" class="block w-full text-sm text-gray-700 file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-gray-300 file:bg-white file:hover:bg-gray-200"/>
+      <input type="file" id="file_taklimat" name="taklimat" accept="application/pdf" class="block w-full text-sm text-gray-700"/>
     </div>
   </div>
 </div>
@@ -190,29 +229,29 @@
   <label class="block text-sm font-semibold mb-2 text-gray-700">Muat Naik Fail (Query)</label>
 
   <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition">
+    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition download-card">
       <label for="resp_file_kertasKerja" class="block text-sm font-medium mb-1 text-gray-700">KERTAS KERJA</label>
-      <input type="file" id="resp_file_kertasKerja" accept="application/pdf" class="block w-full text-sm text-gray-700 file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-gray-300 file:bg-white file:hover:bg-gray-200"/>
+      <input type="file" id="resp_file_kertasKerja" accept="application/pdf" class="block w-full text-sm text-gray-700"/>
     </div>
 
-    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition">
+    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition download-card">
       <label for="resp_file_maklumatAnggota" class="block text-sm font-medium mb-1 text-gray-700">MAKLUMAT ANGGOTA</label>
-      <input type="file" id="resp_file_maklumatAnggota" accept="application/pdf" class="block w-full text-sm text-gray-700 file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-gray-300 file:bg-white file:hover:bg-gray-200"/>
+      <input type="file" id="resp_file_maklumatAnggota" accept="application/pdf" class="block w-full text-sm text-gray-700"/>
     </div>
 
-    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition">
+    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition download-card">
       <label for="resp_file_permitBas" class="block text-sm font-medium mb-1 text-gray-700">PERMIT BAS/KENDERAAN</label>
-      <input type="file" id="resp_file_permitBas" accept="application/pdf" class="block w-full text-sm text-gray-700 file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-gray-300 file:bg-white file:hover:bg-gray-200"/>
+      <input type="file" id="resp_file_permitBas" accept="application/pdf" class="block w-full text-sm text-gray-700"/>
     </div>
 
-    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition">
+    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition download-card">
       <label for="resp_file_lesenPemandu" class="block text-sm font-medium mb-1 text-gray-700">LESEN PEMANDU</label>
-      <input type="file" id="resp_file_lesenPemandu" accept="application/pdf" class="block w-full text-sm text-gray-700 file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-gray-300 file:bg-white file:hover:bg-gray-200"/>
+      <input type="file" id="resp_file_lesenPemandu" accept="application/pdf" class="block w-full text-sm text-gray-700"/>
     </div>
 
-    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition col-span-2 md:col-span-3">
+    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition download-card col-span-2 md:col-span-3">
       <label for="resp_file_taklimat" class="block text-sm font-medium mb-1 text-gray-700">INTIPATI TAKLIMAT KESELAMATAN</label>
-      <input type="file" id="resp_file_taklimat" accept="application/pdf" class="block w-full text-sm text-gray-700 file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-gray-300 file:bg-white file:hover:bg-gray-200"/>
+      <input type="file" id="resp_file_taklimat" accept="application/pdf" class="block w-full text-sm text-gray-700"/>
     </div>
   </div>
 </div>
@@ -225,103 +264,95 @@
   <h2 class="text-xl font-semibold mb-4">Muat Turun</h2>
 
   <!-- Grid kad (responsive) -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 xl-cards-gap">
     <!-- Kad 1 -->
-    <div class="border rounded-lg p-4 shadow-sm bg-white flex flex-col justify-between">
-      <div class="flex items-start gap-3">
-        <!-- PDF icon -->
-        <div class="flex-shrink-0 mt-1">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="3" y="3" width="14" height="18" rx="2" fill="#E53E3E"/>
+    <div class="download-card">
+      <div class="flex items-start gap-4">
+        <div class="pdf-icon" aria-hidden="true">
+          <!-- small stacked PDF icon -->
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="3" width="14" height="18" rx="2" fill="#fff" opacity="0.06"/>
             <path d="M7 7h6v2H7zM7 11h6v2H7zM7 15h4v2H7z" fill="#fff"/>
-            <path d="M17 3v6h4" fill="#E53E3E" opacity="0.0"/>
           </svg>
         </div>
         <div>
-          <div class="inline-block bg-transparent text-gray-900 px-0 py-0 font-semibold">SENARAI SEMAK</div>
-          <p class="text-sm text-gray-600 mt-2">Senarai Semak Permohonan Lawatan Terkini 2025 Dalam Dan Luar Negeri.</p>
+          <div class="download-title">SENARAI SEMAK</div>
+          <p class="download-desc">Senarai Semak Permohonan Lawatan Terkini 2025 Dalam Dan Luar Negeri.</p>
         </div>
       </div>
-      <div class="mt-4">
-        <button data-link="https://drive.google.com/file/d/1rNUmrYzOBM-96OkpjDGBmUsgCQx1jcGZ/view?usp=sharing" class="download-btn w-full px-3 py-2 bg-blue-600 text-white rounded hover:opacity-95">Muat Turun</button>
+      <div class="download-actions">
+        <button data-link="https://drive.google.com/file/d/1rNUmrYzOBM-96OkpjDGBmUsgCQx1jcGZ/view?usp=sharing"
+                class="download-btn download-btn-primary w-full" title="Buka Senarai Semak">Muat Turun</button>
       </div>
     </div>
 
     <!-- Kad 2 -->
-    <div class="border rounded-lg p-4 shadow-sm bg-white flex flex-col justify-between">
-      <div class="flex items-start gap-3">
-        <div class="flex-shrink-0 mt-1">
-          <!-- same icon -->
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="3" y="3" width="14" height="18" rx="2" fill="#E53E3E"/>
-            <path d="M7 7h6v2H7zM7 11h6v2H7zM7 15h4v2H7z" fill="#fff"/>
-          </svg>
+    <div class="download-card">
+      <div class="flex items-start gap-4">
+        <div class="pdf-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="14" height="18" rx="2" fill="#fff" opacity="0.06"/><path d="M7 7h6v2H7zM7 11h6v2H7zM7 15h4v2H7z" fill="#fff"/></svg>
         </div>
         <div>
-          <div class="inline-block bg-transparent text-gray-900 px-0 py-0 font-semibold">Kertas Kerja</div>
-          <p class="text-sm text-gray-600 mt-2">SPK Bil 1. 2021 Lampiran 7</p>
+          <div class="download-title">Kertas Kerja</div>
+          <p class="download-desc">SPK Bil 1. 2021 Lampiran 7</p>
         </div>
       </div>
-      <div class="mt-4">
-        <button data-link="https://drive.google.com/file/d/1dxj1uCowSiFcAp80MGVHD10En-UMQrvw/view?usp=sharing" class="download-btn w-full px-3 py-2 bg-blue-600 text-white rounded hover:opacity-95">Muat Turun</button>
+      <div class="download-actions">
+        <button data-link="https://drive.google.com/file/d/1dxj1uCowSiFcAp80MGVHD10En-UMQrvw/view?usp=sharing"
+                class="download-btn download-btn-primary w-full" title="Buka Kertas Kerja">Muat Turun</button>
       </div>
     </div>
 
     <!-- Kad 3 -->
-    <div class="border rounded-lg p-4 shadow-sm bg-white flex flex-col justify-between">
-      <div class="flex items-start gap-3">
-        <div class="flex-shrink-0 mt-1">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="3" y="3" width="14" height="18" rx="2" fill="#E53E3E"/>
-            <path d="M7 7h6v2H7zM7 11h6v2H7zM7 15h4v2H7z" fill="#fff"/>
-          </svg>
+    <div class="download-card">
+      <div class="flex items-start gap-4">
+        <div class="pdf-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="14" height="18" rx="2" fill="#fff" opacity="0.06"/><path d="M7 7h6v2H7zM7 11h6v2H7zM7 15h4v2H7z" fill="#fff"/></svg>
         </div>
         <div>
-          <div class="inline-block bg-transparent text-gray-900 px-0 py-0 font-semibold">Lampiran A</div>
-          <p class="text-sm text-gray-600 mt-2">Borang Lawatan Murid Sekolah _ SPI BIL.9 THN 2023 LAMPIRAN A.</p>
+          <div class="download-title">Lampiran A</div>
+          <p class="download-desc">Borang Lawatan Murid Sekolah _ SPI BIL.9 THN 2023 LAMPIRAN A.</p>
         </div>
       </div>
-      <div class="mt-4">
-        <button data-link="https://drive.google.com/file/d/1RhUVrDDSTsFACgd4QHgzzqqkbNefuRxE/view?usp=drive_link" class="download-btn w-full px-3 py-2 bg-blue-600 text-white rounded hover:opacity-95">Muat Turun</button>
+      <div class="download-actions">
+        <button data-link="https://drive.google.com/file/d/1RhUVrDDSTsFACgd4QHgzzqqkbNefuRxE/view?usp=drive_link"
+                class="download-btn download-btn-primary w-full" title="Buka Lampiran A">Muat Turun</button>
       </div>
     </div>
 
     <!-- Kad 4 (mengandungi 2 butang muat turun) -->
-    <div class="border rounded-lg p-4 shadow-sm bg-white flex flex-col justify-between">
-      <div class="flex items-start gap-3">
-        <div class="flex-shrink-0 mt-1">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="3" y="3" width="14" height="18" rx="2" fill="#E53E3E"/>
-            <path d="M7 7h6v2H7zM7 11h6v2H7zM7 15h4v2H7z" fill="#fff"/>
-          </svg>
+    <div class="download-card">
+      <div class="flex items-start gap-4">
+        <div class="pdf-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="14" height="18" rx="2" fill="#fff" opacity="0.06"/><path d="M7 7h6v2H7zM7 11h6v2H7zM7 15h4v2H7z" fill="#fff"/></svg>
         </div>
         <div>
-          <div class="inline-block bg-transparent text-gray-900 px-0 py-0 font-semibold">SPI</div>
-          <p class="text-sm text-gray-600 mt-2">Surat Pekeliling Ikhtisas Kementerian Pendidikan Malaysia.</p>
+          <div class="download-title">SPI</div>
+          <p class="download-desc">Surat Pekeliling Ikhtisas Kementerian Pendidikan Malaysia.</p>
         </div>
       </div>
-      <div class="mt-4 flex gap-2">
-        <button data-link="https://drive.google.com/file/d/1OouJG3DcWHQhc4fLvo_dDqVA6zx_A6ay/view?usp=sharing" class="download-btn flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:opacity-95">SPI KPM BIL 3 2019</button>
-        <button data-link="https://drive.google.com/file/d/1VBd0YKVbYZ8KW-eFPizVh26KlifSfqRS/view?usp=sharing" class="download-btn flex-1 px-3 py-2 bg-gray-200 rounded hover:bg-gray-100">SPI KPM BIL 9 2023</button>
+      <div class="download-actions flex gap-3">
+        <button data-link="https://drive.google.com/file/d/1OouJG3DcWHQhc4fLvo_dDqVA6zx_A6ay/view?usp=sharing"
+                class="download-btn download-btn-primary flex-1" title="Buka SPI KPM BIL 3 2019">SPI KPM BIL 3 2019</button>
+        <button data-link="https://drive.google.com/file/d/1VBd0YKVbYZ8KW-eFPizVh26KlifSfqRS/view?usp=sharing"
+                class="download-btn download-btn-secondary flex-1" title="Buka SPI KPM BIL 9 2023">SPI KPM BIL 9 2023</button>
       </div>
     </div>
 
     <!-- Kad 5 -->
-    <div class="border rounded-lg p-4 shadow-sm bg-white flex flex-col justify-between">
-      <div class="flex items-start gap-3">
-        <div class="flex-shrink-0 mt-1">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="3" y="3" width="14" height="18" rx="2" fill="#E53E3E"/>
-            <path d="M7 7h6v2H7zM7 11h6v2H7zM7 15h4v2H7z" fill="#fff"/>
-          </svg>
+    <div class="download-card">
+      <div class="flex items-start gap-4">
+        <div class="pdf-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="14" height="18" rx="2" fill="#fff" opacity="0.06"/><path d="M7 7h6v2H7zM7 11h6v2H7zM7 15h4v2H7z" fill="#fff"/></svg>
         </div>
         <div>
-          <div class="inline-block bg-transparent text-gray-900 px-0 py-0 font-semibold">Permohonan Kelulusan</div>
-          <p class="text-sm text-gray-600 mt-2">Surat Permohonan Kelulusan Kutipan Lawatan.</p>
+          <div class="download-title">Permohonan Kelulusan</div>
+          <p class="download-desc">Surat Permohonan Kelulusan Kutipan Lawatan.</p>
         </div>
       </div>
-      <div class="mt-4">
-        <button data-link="https://drive.google.com/file/d/1IbmtO2sCAvnPcjzqU0EaQKLPa5KGjrzT/view?usp=sharing" class="download-btn w-full px-3 py-2 bg-blue-600 text-white rounded hover:opacity-95">Muat Turun</button>
+      <div class="download-actions">
+        <button data-link="https://drive.google.com/file/d/1IbmtO2sCAvnPcjzqU0EaQKLPa5KGjrzT/view?usp=sharing"
+                class="download-btn download-btn-primary w-full" title="Buka Permohonan Kelulusan">Muat Turun</button>
       </div>
     </div>
   </div>
@@ -331,15 +362,17 @@
 
 <!-- handler untuk butang muat turun di Downloads section -->
 <script>
-  document.querySelectorAll('#downloadsSection .download-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const url = e.currentTarget.getAttribute('data-link') || '#';
-      if (!url || url === '#') {
-        Swal.fire({ icon: 'info', title: 'Tiada fail', text: 'Link muat turun belum dikonfigurasikan.' });
-        return;
-      }
-      window.open(url, '_blank');
-    });
+  // delegate after DOM ready
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest && e.target.closest('#downloadsSection .download-btn');
+    if (!btn) return;
+    const url = btn.getAttribute('data-link') || btn.dataset.link || '#';
+    if (!url || url === '#') {
+      Swal.fire({ icon: 'info', title: 'Tiada fail', text: 'Link muat turun belum dikonfigurasikan.' });
+      return;
+    }
+    // open in new tab safely
+    window.open(url, '_blank', 'noopener,noreferrer');
   });
 </script>
 
