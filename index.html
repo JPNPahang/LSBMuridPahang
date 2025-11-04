@@ -499,22 +499,38 @@ function renderTablesFromCache(){
           });
         });
       }
-    } else if (String(status).indexOf('FINAL_APPROVED')>-1 || String(status).indexOf('READY_FOR_DP')>-1 || String(status).indexOf('PREAPPROVED')>-1) {
-      // approved group -> only Lihat Fail
-      const letterDate = req['LetterDate'] || req['TarikhSurat'] || req['DateApproved'] || req['ApprovedDate'] || '';
-      const letterUrls = String(req['Letters']||'').split(/\s*;\s*/).filter(Boolean);
-      const letterLink = letterUrls.length ? `<a href="${letterUrls[0]}" target="_blank" class="text-blue-600 underline">Muat Turun</a>` : '';
-      approvedRows.push({
-        'Kod Sekolah': kodSek,
-        'Nama Sekolah': school,
-        'Kategori': reqCategory || '',
-        'Tarikh Surat Lulus': fmtDateToDisplay(letterDate || req['GeneratedDate'] || req['NoSuratDate'] || ''),
-        'Link Surat': letterLink,
-        'Status': status,
-        'Surat': noSurat,
-        'Tindakan': actionsGeneric
-      });
-    } else {
+    } else if (String(status).indexOf('FINAL_APPROVED')>-1 || 
+         String(status).indexOf('READY_FOR_DP')>-1 || 
+         String(status).indexOf('PREAPPROVED')>-1) {
+  // approved group -> only Lihat Fail (no query/lulus buttons)
+  const letterDate = req['LetterDate'] || req['TarikhSurat'] || req['DateApproved'] || req['ApprovedDate'] || '';
+
+  // split all URLs from Letters column (support multiple surat)
+  const letterUrls = String(req['Letters']||'')
+    .split(/\s*;\s*/)
+    .map(u => u && u.trim())
+    .filter(Boolean);
+
+  let letterLink = '';
+  if (letterUrls.length === 1) {
+    letterLink = `<a href="${letterUrls[0]}" target="_blank" class="text-blue-600 underline">Muat Turun</a>`;
+  } else if (letterUrls.length > 1) {
+    letterLink = letterUrls
+      .map((u,i) => `<a href="${u}" target="_blank" class="text-blue-600 underline">Muat Turun ${i+1}</a>`)
+      .join(' &nbsp;|&nbsp; ');
+  }
+
+  approvedRows.push({
+    'Kod Sekolah': kodSek,
+    'Nama Sekolah': school,
+    'Kategori': req['Category'] || req['category'] || '',
+    'Tarikh Surat Lulus': fmtDateToDisplay(letterDate || req['GeneratedDate'] || req['NoSuratDate'] || ''),
+    'Link Surat': letterLink,
+    'Status': status,
+    'Surat': noSurat,
+    'Tindakan': actionsGeneric
+  });
+} else {
       newRows.push({
         'Kod Sekolah': kodSek,
         'Nama Sekolah': school,
@@ -596,32 +612,70 @@ function renderTablesFromCache(){
     });
   });
 
-  document.querySelectorAll('.btn-preapprove').forEach(btn=>{
-    btn.addEventListener('click', async ev=>{
-      const id = ev.currentTarget.dataset.id;
-      const { value: formValues } = await Swal.fire({
-        title:'Jana Surat Kelulusan',
-        html:`<input id="swal_noJilid" class="swal2-input" placeholder="No Jilid (e.g. 24)">
-              <input id="swal_bilSurat" class="swal2-input" placeholder="Bil Surat (angka, e.g. 25)">
-              <input id="swal_tarikhSurat" type="date" class="swal2-input">
-              <input id="swal_pic" class="swal2-input" placeholder="Nama PIC yang urus (contoh: Ahmad)">`,
-        focusConfirm:false, showCancelButton:true, confirmButtonText:'Jana Surat',
-        preConfirm:()=>{ const noJ=document.getElementById('swal_noJilid').value; const bil=document.getElementById('swal_bilSurat').value; const tar=document.getElementById('swal_tarikhSurat').value||new Date().toISOString().slice(0,10); const pic=document.getElementById('swal_pic').value||''; if(!noJ||!bil){ Swal.showValidationMessage('Sila isi No Jilid dan Bil Surat'); return false; } return {noJilid:noJ,bilSurat:bil,tarikhSurat:tar,pic}; }
-      });
-      if (!formValues) return;
-      const ok1 = await sendOfficerAction(id,'preapprove','', formValues.pic || 'Menengah');
-      if (!ok1) return;
-      try {
-        const url = GAS_URL + '?action=generateLetters&id=' + encodeURIComponent(id) + '&secret=' + encodeURIComponent(officerSecret) + '&noJilid=' + encodeURIComponent(formValues.noJilid) + '&bilSurat=' + encodeURIComponent(formValues.bilSurat) + '&tarikhSurat=' + encodeURIComponent(formValues.tarikhSurat);
-        const r = await fetch(url); const j2 = await r.json();
-        if (j2.ok) {
-          const display = `JPNP.SPS.100-2/4/5 Jld ${formValues.noJilid} (${formValues.bilSurat})`;
-          await Swal.fire({ icon:'success', title:'Surat dijana', html:`No Surat: <b>${display}</b>` });
-          if (officerSecret) await loadRequests(); else renderTablesFromCache();
-        } else Swal.fire({icon:'error',title:'Gagal jana surat',text:j2.message||JSON.stringify(j2)});
-      } catch (err) { Swal.fire({icon:'error',title:'Ralat sambungan',text:err.message||''}); }
+  /* ---------- Replace existing .btn-preapprove handler with this block ---------- */
+document.querySelectorAll('.btn-preapprove').forEach(btn=>{
+  btn.addEventListener('click', async ev=>{
+    const id = ev.currentTarget.dataset.id;
+    // show Swal modal with dropdown for PIC (Menengah/Rendah) and default Menengah
+    const { value: formValues } = await Swal.fire({
+      title: 'Jana Surat Kelulusan',
+      html: `
+        <input id="swal_noJilid" class="swal2-input" placeholder="No Jilid (e.g. 24)">
+        <input id="swal_bilSurat" class="swal2-input" placeholder="Bil Surat (angka, e.g. 25)">
+        <input id="swal_tarikhSurat" type="date" class="swal2-input" value="${new Date().toISOString().slice(0,10)}">
+        <select id="swal_pic" class="swal2-input">
+          <option value="Menengah" selected>Menengah</option>
+          <option value="Rendah">Rendah</option>
+        </select>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Jana Surat',
+      preConfirm: () => {
+        const noJ = document.getElementById('swal_noJilid').value && document.getElementById('swal_noJilid').value.trim();
+        const bil = document.getElementById('swal_bilSurat').value && document.getElementById('swal_bilSurat').value.trim();
+        const tar = document.getElementById('swal_tarikhSurat').value || new Date().toISOString().slice(0,10);
+        const pic = document.getElementById('swal_pic').value || 'Menengah';
+        if (!noJ || !bil) {
+          Swal.showValidationMessage('Sila isi No Jilid dan Bil Surat');
+          return false;
+        }
+        // return object expected by caller
+        return { noJilid: noJ, bilSurat: bil, tarikhSurat: tar, pic };
+      }
     });
+
+    // if user cancelled
+    if (!formValues) return;
+
+    // same behaviour: call officerAction preapprove, then request generateLetters
+    const ok1 = await sendOfficerAction(id, 'preapprove', '', formValues.pic || 'Menengah');
+    if (!ok1) return;
+
+    try {
+      const url = GAS_URL
+        + '?action=generateLetters&id=' + encodeURIComponent(id)
+        + '&secret=' + encodeURIComponent(officerSecret)
+        + '&noJilid=' + encodeURIComponent(formValues.noJilid)
+        + '&bilSurat=' + encodeURIComponent(formValues.bilSurat)
+        + '&tarikhSurat=' + encodeURIComponent(formValues.tarikhSurat);
+      const r = await fetch(url);
+      const j2 = await r.json();
+      if (j2.ok) {
+        const display = `JPNP.SPS.100-2/4/5 Jld ${formValues.noJilid} (${formValues.bilSurat})`;
+        await Swal.fire({ icon:'success', title:'Surat dijana', html:`No Surat: <b>${display}</b>` });
+        // refresh list so new Letters column appears
+        if (officerSecret) await loadRequests();
+        else renderTablesFromCache();
+      } else {
+        Swal.fire({ icon:'error', title:'Gagal jana surat', text: j2.message || JSON.stringify(j2) });
+      }
+    } catch (err) {
+      Swal.fire({ icon:'error', title:'Ralat sambungan', text: err.message || '' });
+    }
   });
+});
+/* ---------- end replacement block ---------- */
 
 }
 
