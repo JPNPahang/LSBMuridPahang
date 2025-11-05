@@ -56,6 +56,59 @@
     @media (min-width: 1280px) {
       .xl-cards-gap { gap: 1.25rem; }
     }
+    /* -------------------------
+   Custom gentle pulse cycle
+   5s pulsing (many small pulses), 2s pause => total 7s loop
+   ------------------------- */
+@keyframes gentlePulseCycle {
+  0%    { opacity: 1; transform: translateY(0); }
+  7.14% { opacity: 0.7; }
+  14.28%{ opacity: 1; }
+  21.42%{ opacity: 0.7; }
+  28.56%{ opacity: 1; }
+  35.70%{ opacity: 0.7; }
+  42.84%{ opacity: 1; }
+  50.00%{ opacity: 0.7; }
+  57.14%{ opacity: 1; }
+  64.28%{ opacity: 0.7; }
+  71.42%{ opacity: 1; } /* end of pulsing phase (~5s) */
+  100%  { opacity: 1; } /* pause (2s) */
+}
+
+/* apply to element */
+.animate-gentle-pulse {
+  animation: gentlePulseCycle 7s ease-in-out infinite;
+}
+
+/* make initial “Akses Dibenarkan” button appear green boxed and disabled look */
+.btn-access-granted {
+  background-color: #16a34a; /* green-600 */
+  color: white;
+  border: none;
+}
+
+/* logout button style (red box with door icon) */
+.btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .45rem .6rem;
+  border-radius: .375rem;
+  border: none;
+  background: #dc2626; /* red-600 */
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* hidden helper */
+.hidden-inline { display: none !important; }
+
+/* small pulse fade-in for status text */
+.status-pulse {
+  transition: opacity .35s ease;
+  opacity: 1;
+}
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -173,15 +226,23 @@
         <h2 class="text-xl font-semibold mb-3">Semakan (Pegawai)</h2>
 
         <div class="mb-4 flex items-center gap-3">
-          <button id="loginOfficer" class="px-4 py-2 bg-blue-600 text-white rounded">Log masuk Pegawai</button>
-          <span id="officerLoggedAs" class="ml-3 text-sm text-gray-600"></span>
+  <!-- Login / Access area -->
+  <div id="officerAuthWrap" class="flex items-center gap-3">
+    <button id="loginOfficer" class="px-4 py-2 bg-blue-600 text-white rounded">LOGIN Pegawai</button>
 
-          <div class="ml-auto flex items-center gap-2">
-            <input id="searchBox" class="border p-2 rounded text-sm" placeholder="Cari kod sekolah atau nama sekolah..." />
-            <button id="searchBtn" class="px-3 py-1 bg-blue-600 text-white rounded text-sm">Cari</button>
-            <button id="clearSearchBtn" class="px-3 py-1 bg-gray-200 rounded text-sm">Kosong</button>
-          </div>
-        </div>
+    <!-- Logout button (hidden until login) -->
+    <button id="logoutOfficer" class="btn-logout hidden-inline" title="Log Keluar Pegawai">🚪LOGOUT</button>
+
+    <span id="officerLoggedAs" class="ml-3 text-sm text-gray-600"></span>
+  </div>
+
+  <div class="ml-auto flex items-center gap-2">
+    <input id="searchBox" class="border p-2 rounded text-sm" placeholder="Cari kod sekolah atau nama sekolah..." />
+    <button id="searchBtn" class="px-3 py-1 bg-blue-600 text-white rounded text-sm">Cari</button>
+    <button id="clearSearchBtn" class="px-3 py-1 bg-gray-200 rounded text-sm">Kosong</button>
+  </div>
+</div>
+
 
         <div class="flex gap-3 mb-4 items-center">
           <select id="filterCategory" class="border p-2 rounded">
@@ -618,26 +679,94 @@ function setActiveTab(btnId){
 });
 
 // default
-setActiveTab('tabFormBtn');
-$('formSection').classList.remove('hidden');
+setActiveTab('tabIntroBtn');
+$('introSection').classList.remove('hidden');
 
-/* Pegawai: login (separate) */
+/* Pegawai: login (separate) — replace existing handler with this block */
 $('loginOfficer').addEventListener('click', async ()=>{
-  const { value: pw } = await Swal.fire({ title:'Log masuk Pegawai', input:'password', inputLabel:'Masukkan kata laluan Pegawai', showCancelButton:true, confirmButtonText:'Log masuk' });
+  const { value: pw } = await Swal.fire({
+    title: 'Akses Pegawai',
+    input: 'password',
+    inputLabel: 'Masukkan kata laluan Pegawai',
+    showCancelButton: true,
+    confirmButtonText: 'LOG IN'
+  });
   if (!pw) return;
+
   try {
     showLoading();
     const check = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
     const cj = await check.json();
     hideLoading();
+
     if (cj.ok) {
+      // store secret and update UI
       officerSecret = pw;
-      $('officerLoggedAs').textContent = ' (Disambungkan)';
+
+      // change login button to green access-granted, enable gentle pulse
+      const btn = $('loginOfficer');
+      btn.textContent = 'Akses Dibenarkan';
+      btn.classList.remove('bg-blue-600');
+      btn.classList.add('btn-access-granted', 'animate-gentle-pulse');
+      btn.disabled = true;
+
+      // show status text
+      const statusEl = $('officerLoggedAs');
+      statusEl.textContent = ' (Sistem Online)';
+      statusEl.classList.add('status-pulse');
+
+      // show logout button
+      const logoutBtn = $('logoutOfficer');
+      logoutBtn.classList.remove('hidden-inline');
+
+      // attach logout listener (only once)
+      if (!logoutBtn._hasHandler) {
+        logoutBtn._hasHandler = true;
+        logoutBtn.addEventListener('click', async () => {
+          // optional confirm
+          const ok = await Swal.fire({
+            title: 'Log Out?',
+            text: 'Adakah anda pasti.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Log Out',
+            cancelButtonText: 'Batal'
+          });
+          if (!ok.isConfirmed) return;
+
+          // clear secrets & UI
+          officerSecret = null;
+          // revert login button look
+          const b = $('loginOfficer');
+          b.textContent = 'LOGIN Pegawai';
+          b.classList.remove('btn-access-granted', 'animate-gentle-pulse');
+          b.classList.add('bg-blue-600');
+          b.disabled = false;
+
+          // hide logout button and clear status text
+          $('logoutOfficer').classList.add('hidden-inline');
+          $('officerLoggedAs').textContent = '';
+          // refresh local cache/UI
+          requestsCache = [];
+          renderTablesFromCache();
+          Swal.fire({icon:'success', title:'Log Out berjaya', timer:1500, showConfirmButton:false});
+        });
+      }
+
+      // load requests after login
       await loadRequests();
-      Swal.fire({icon:'success',title:'Login Pegawai berjaya'});
-    } else Swal.fire({icon:'error',title:'Kata laluan salah'});
-  } catch (err){ hideLoading(); Swal.fire({icon:'error',title:'Ralat sambungan',text:err.message||''}); }
+
+      // keep animate running (infinite). If you want it to stop briefly then resume, we already have 7s cycle
+      Swal.fire({ icon:'success', title:'Akses Dibenarkan', text:'Sistem Online.', timer:1800, showConfirmButton:false });
+    } else {
+      Swal.fire({ icon: 'error', title: 'Kata laluan salah' });
+    }
+  } catch (err) {
+    hideLoading();
+    Swal.fire({ icon: 'error', title: 'Ralat sambungan', text: err.message || '' });
+  }
 });
+
 
 /* Filters control (no PIC) */
 $('applyFilters').addEventListener('click', ()=> renderTablesFromCache());
@@ -760,9 +889,9 @@ function renderTablesFromCache(){
     // action buttons
     const actionsGeneric = `<div class="flex gap-2"><button data-id="${id}" class="view-files px-2 py-1 border rounded text-xs">Lihat Fail</button></div>`;
     const actionsWithOfficerBtns = `<div class="flex gap-2">
-        <button data-id="${id}" class="view-files px-2 py-1 border rounded text-xs">Lihat Fail</button>
+        <button data-id="${id}" class="view-files px-2 py-1 bg-pink-400 border rounded text-xs">PDF Fail</button>
         <button data-id="${id}" class="btn-query px-2 py-1 bg-yellow-400 rounded text-xs">Query</button>
-        <button data-id="${id}" class="btn-preapprove px-2 py-1 bg-green-600 text-white rounded text-xs">Lulus (Jana Surat)</button>
+        <button data-id="${id}" class="btn-preapprove px-2 py-1 bg-green-600 text-white rounded text-xs">Disemak (TP)</button>
       </div>`;
 
     if (String(status).indexOf('QUERY') > -1) {
@@ -992,13 +1121,13 @@ async function sendOfficerAction(id,type,note='',pic='Menengah'){
 
 /* Timbalan login */
 $('loginDP').addEventListener('click', async ()=>{
-  const { value: pw } = await Swal.fire({ title:'Log masuk Timbalan', input:'password', showCancelButton:true, confirmButtonText:'Log masuk' });
+  const { value: pw } = await Swal.fire({ title:'Password Timbalan Pengarah', input:'password', showCancelButton:true, confirmButtonText:'Log masuk' });
   if (!pw) return;
   try {
     showLoading();
     const res = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
     const j = await res.json(); hideLoading();
-    if (j.ok) { dpSecret = pw; Swal.fire({icon:'success',title:'Login Timbalan berjaya'}); loadDpList(); } else Swal.fire({icon:'error',title:'Kata laluan salah'});
+    if (j.ok) { dpSecret = pw; Swal.fire({icon:'success',title:'Selamat Datang Tuan Timbalan'}); loadDpList(); } else Swal.fire({icon:'error',title:'Kata laluan salah'});
   } catch (err){ hideLoading(); Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); }
 });
 
@@ -1006,14 +1135,87 @@ async function loadDpList(){
   if (!dpSecret) return Swal.fire({icon:'warning',title:'Sila log masuk.'});
   try {
     const res = await fetch(GAS_URL + '?action=listRequests&secret=' + encodeURIComponent(dpSecret));
-    const j = await res.json(); if (!j.ok) return Swal.fire({icon:'error',title:'Gagal fetch.'});
+    const j = await res.json();
+    if (!j.ok) return Swal.fire({icon:'error',title:'Gagal fetch.'});
     const requests = j.requests.filter(r=> r['Status'] && (String(r['Status']).indexOf('READY_FOR_DP')>-1 || r['Status']==='PREAPPROVED'));
     const div = document.createElement('div');
-    if (requests.length === 0) div.innerHTML = `<p class="text-gray-500 italic">Tiada permohonan sedia untuk kelulusan akhir.</p>`;
-    requests.forEach(req=>{ const card=document.createElement('div'); card.className='border p-3 mb-2 rounded'; card.innerHTML=`<div class="font-semibold">${req['Request ID']} — ${req['School Name']}</div><div class="text-sm">Status: ${req['Status']}</div>`; const btn=document.createElement('button'); btn.className='mt-2 px-3 py-1 bg-green-600 text-white rounded'; btn.textContent='Diluluskan (Hantar Surat)'; btn.addEventListener('click',async ()=>{ if(!confirm('Sahkan hantar surat kelulusan kepada sekolah?')) return; showLoading(); const r2=await fetch(GAS_URL + '?action=finalApprove&id=' + encodeURIComponent(req['Request ID']) + '&secret=' + encodeURIComponent(dpSecret)); const j2=await r2.json(); hideLoading(); if(j2.ok){ Swal.fire({icon:'success',title:'Emel dihantar.'}); loadDpList(); } else Swal.fire({icon:'error',title:'Gagal',text:j2.message||JSON.stringify(j2)}); }); card.appendChild(btn); div.appendChild(card); });
+    if (requests.length === 0) {
+      div.innerHTML = `<p class="text-gray-500 italic">Tiada permohonan sedia untuk kelulusan akhir.</p>`;
+    } else {
+      for (const req of requests) {
+        const card = document.createElement('div');
+        card.className = 'border p-3 mb-2 rounded';
+        card.innerHTML = `<div class="font-semibold">${req['Request ID']} — ${req['School Name']}</div><div class="text-sm">Status: ${req['Status']}</div>`;
+        const btn = document.createElement('button');
+        btn.className = 'mt-2 px-3 py-1 bg-green-600 text-white rounded';
+        btn.textContent = 'Diluluskan (Hantar Surat)';
+
+        btn.addEventListener('click', async () => {
+          // fetch request details for preview
+          try {
+            showLoading();
+            const g = await fetch(GAS_URL + '?action=getRequest&secret=' + encodeURIComponent(dpSecret) + '&id=' + encodeURIComponent(req['Request ID']));
+            const gj = await g.json();
+            hideLoading();
+            if (!gj.ok) return Swal.fire({icon:'error',title:'Gagal ambil butiran',text: gj.message || ''});
+            const rdetail = gj.request || {};
+            const schoolEmail = rdetail['School Email'] || '-';
+            const travelStart = rdetail['Travel Start'] || rdetail['TravelStart'] || '-';
+            const travelEnd = rdetail['Travel End'] || rdetail['TravelEnd'] || '-';
+            const submissionText = rdetail['Submission Time'] || '-';
+            const subject = `KELULUSAN LAWATAN SAMBIL BELAJAR MURID — ${rdetail['School Name'] || ''}`;
+            const bodyPreview = `Assalamualaikum dan Salam Sejahtera.\n\nBerikut dikongsikan surat kelulusan bagi permohonan anda ${req['Request ID']} yang diterima pada ${submissionText}.\n\nSila rujuk lampiran atau pautan di dalam emel.\n\nTerima kasih.\nSektor Pengurusan Sekolah, JPN Pahang`;
+
+            // show preview + confirm
+            await Swal.fire({
+              title: 'Preview Emel Kelulusan',
+              html:
+                `<p><strong>Subject:</strong> ${subject}</p>` +
+                `<p><strong>Kepada:</strong> ${schoolEmail}</p>` +
+                `<hr/>` +
+                `<div style="text-align:left; white-space:pre-line;">${bodyPreview}</div>`,
+              showCancelButton: true,
+              confirmButtonText: 'Hantar Emel & Jana Surat',
+              cancelButtonText: 'Batal',
+              width: 700,
+              preConfirm: async () => {
+                try {
+                  showLoading();
+                  const r2 = await fetch(GAS_URL + '?action=finalApprove&id=' + encodeURIComponent(req['Request ID']) + '&secret=' + encodeURIComponent(dpSecret));
+                  const j2 = await r2.json();
+                  hideLoading();
+                  if (!j2.ok) throw new Error(j2.message || j2.error || JSON.stringify(j2));
+                  return j2;
+                } catch (err) {
+                  hideLoading();
+                  Swal.showValidationMessage('Gagal menghantar: ' + (err.message || err));
+                  throw err;
+                }
+              }
+            }).then(result => {
+              if (result.isConfirmed) {
+                Swal.fire({icon:'success',title:'Emel dihantar.', text: (result.value && result.value.message) ? result.value.message : ''});
+                loadDpList();
+              }
+            });
+          } catch (err) {
+            hideLoading();
+            Swal.fire({icon:'error',title:'Ralat',text: err.message || ''});
+          }
+        });
+
+        card.appendChild(btn);
+        div.appendChild(card);
+      }
+    }
+
     $('dpRequestsTable').innerHTML=''; $('dpRequestsTable').appendChild(div);
-  } catch (err){ Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); }
+  } catch (err){
+    hideLoading();
+    Swal.fire({icon:'error',title:'Ralat',text:err.message||''});
+  }
 }
+
 
 /* Query response (sekolah tanpa login) */
 $('sendQueryResponseBtn').addEventListener('click', async ()=>{
