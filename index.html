@@ -99,6 +99,8 @@
           <div class="grid grid-cols-2 gap-4">
             <div><label class="block text-sm">Kod Sekolah</label><input id="schoolCode" name="schoolCode" class="w-full border p-2 rounded" required /></div>
             <div><label class="block text-sm">Nama Sekolah</label><input id="schoolName" name="schoolName" class="w-full border p-2 rounded" required /></div>
+            <div><label class="block text-sm">Daerah</label><input id="daerah" name="daerah" class="w-full border p-2 rounded" placeholder="Contoh: Kuantan" /></div>
+            <div><label class="block text-sm">Poskod</label><input id="poskod" name="poskod" class="w-full border p-2 rounded" placeholder="Contoh: 25000" pattern="\d{5}" /> </div>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
@@ -120,19 +122,21 @@
           <div class="grid grid-cols-2 gap-4">
             <div><label class="block text-sm">Bilangan Kenderaan</label><input id="vehicleCount" name="vehicleCount" type="number" min="1" class="w-full border p-2 rounded" value="1" required /></div>
             <div><label class="block text-sm">Jumlah Ahli</label><input id="participantCount" name="participantCount" type="number" min="1" class="w-full border p-2 rounded" required /></div>
+            <div><label class="block text-sm">Bilangan Pengiring Murid</label><input id="bp" name="bp" type="number" min="0" class="w-full border p-2 rounded" placeholder="Contoh: 5" /></div>
+            <div><label class="block text-sm">Bilangan Murid </label><input id="bm" name="bm" type="number" min="0" class="w-full border p-2 rounded" placeholder="Contoh: 40" /></div>
           </div>
-
+            
           <div><label class="block text-sm">Tempat Pelancongan</label><input id="placeVisit" name="placeVisit" class="w-full border p-2 rounded" required /></div>
           <div><label class="block text-sm">Alamat Penginapan</label><input id="accommodation" name="accommodation" class="w-full border p-2 rounded" /></div>
 
           <div>
-  <label class="block text-sm font-semibold mb-2 text-gray-700">Muat Naik Fail (PDF) — ikut kategori (5 fail)</label>
+            <label class="block text-sm font-semibold mb-2 text-gray-700">Muat Naik Fail (PDF) — ikut kategori (5 fail)</label>
 
-  <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-    <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition download-card">
-      <label for="file_kertasKerja" class="block text-sm font-medium mb-1 text-gray-700">KERTAS KERJA</label>
-      <input type="file" id="file_kertasKerja" name="kertasKerja" accept="application/pdf" class="block w-full text-sm text-gray-700"/>
-    </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition download-card">
+          <label for="file_kertasKerja" class="block text-sm font-medium mb-1 text-gray-700">KERTAS KERJA</label>
+          <input type="file" id="file_kertasKerja" name="kertasKerja" accept="application/pdf" class="block w-full text-sm text-gray-700"/>
+        </div>
 
     <div class="p-3 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition download-card">
       <label for="file_maklumatAnggota" class="block text-sm font-medium mb-1 text-gray-700">MAKLUMAT ANGGOTA</label>
@@ -561,11 +565,24 @@ async function fileToBase64(file){ return new Promise((res,rej)=>{ const r=new F
 $('permohonanForm').addEventListener('submit', async function(ev){
   ev.preventDefault(); $('submitBtn').disabled=true;
   const payload = {
-    schoolCode:$('schoolCode').value.trim(), schoolName:$('schoolName').value.trim(), schoolEmail:$('schoolEmail').value.trim(),
-    category:$('category').value, travelStartDate:$('travelStart').value, travelEndDate:$('travelEnd').value,
-    leaderNames: leaders.map(l=>l.name).filter(Boolean), leaderPhones: leaders.map(l=>l.phone).filter(Boolean),
-    vehicleCount:$('vehicleCount').value, placeVisit:$('placeVisit').value, accommodation:$('accommodation').value, participantCount:$('participantCount').value
-  };
+  schoolCode: $('schoolCode').value.trim(),
+  schoolName: $('schoolName').value.trim(),
+  daerah: $('daerah').value.trim(),
+  poskod: $('poskod').value.trim(),
+  schoolEmail: $('schoolEmail').value.trim(),
+  category: $('category').value,
+  travelStartDate: $('travelStart').value,
+  travelEndDate: $('travelEnd').value,
+  leaderNames: leaders.map(l=>l.name).filter(Boolean),
+  leaderPhones: leaders.map(l=>l.phone).filter(Boolean),
+  vehicleCount: $('vehicleCount').value,
+  participantCount: $('participantCount').value,
+  bp: $('bp').value,   // Bilangan Pengiring
+  bm: $('bm').value,   // Bilangan Murid
+  placeVisit: $('placeVisit').value,
+  accommodation: $('accommodation').value
+};
+
   // validate dates
   const start=new Date(payload.travelStartDate), end=new Date(payload.travelEndDate);
   const today=new Date(); today.setHours(0,0,0,0); const min=new Date(today.getTime()+30*24*60*60*1000);
