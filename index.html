@@ -1039,71 +1039,32 @@ function renderTablesFromCache(){
     });
   });
 
-  /* ---------- Replace existing .btn-preapprove handler with this block ---------- */
+ /* ---------- REPLACEMENT: preapprove only (no generateLetters) ---------- */
 document.querySelectorAll('.btn-preapprove').forEach(btn=>{
   btn.addEventListener('click', async ev=>{
     const id = ev.currentTarget.dataset.id;
-    // show Swal modal with dropdown for PIC (Menengah/Rendah) and default Menengah
-    const { value: formValues } = await Swal.fire({
-      title: 'Jana Surat Kelulusan',
-      html: `
-        <input id="swal_noJilid" class="swal2-input" placeholder="No Jilid (e.g. 24)">
-        <input id="swal_bilSurat" class="swal2-input" placeholder="Bil Surat (angka, e.g. 25)">
-        <input id="swal_tarikhSurat" type="date" class="swal2-input" value="${new Date().toISOString().slice(0,10)}">
-        <select id="swal_pic" class="swal2-input">
-          <option value="Menengah" selected>Menengah</option>
-          <option value="Rendah">Rendah</option>
-        </select>
-      `,
-      focusConfirm: false,
+    // optional short note to record for Timbalan
+    const { value: note } = await Swal.fire({
+      title: 'Semak & Hantar kepada Timbalan',
+      input: 'textarea',
+      inputPlaceholder: 'Catatan pendek untuk Timbalan (pilihan)…',
       showCancelButton: true,
-      confirmButtonText: 'Jana Surat',
-      preConfirm: () => {
-        const noJ = document.getElementById('swal_noJilid').value && document.getElementById('swal_noJilid').value.trim();
-        const bil = document.getElementById('swal_bilSurat').value && document.getElementById('swal_bilSurat').value.trim();
-        const tar = document.getElementById('swal_tarikhSurat').value || new Date().toISOString().slice(0,10);
-        const pic = document.getElementById('swal_pic').value || 'Menengah';
-        if (!noJ || !bil) {
-          Swal.showValidationMessage('Sila isi No Jilid dan Bil Surat');
-          return false;
-        }
-        // return object expected by caller
-        return { noJilid: noJ, bilSurat: bil, tarikhSurat: tar, pic };
-      }
+      confirmButtonText: 'Hantar ke Timbalan',
+      cancelButtonText: 'Batal'
     });
+    if (note === undefined) return; // user cancelled
 
-    // if user cancelled
-    if (!formValues) return;
+    // only mark as preapprove (server should set REVIEWED_FOR_TP or READY_FOR_DP)
+    const ok = await sendOfficerAction(id, 'preapprove', note || '', 'Menengah');
+    if (!ok) return;
 
-    // same behaviour: call officerAction preapprove, then request generateLetters
-    const ok1 = await sendOfficerAction(id, 'preapprove', '', formValues.pic || 'Menengah');
-    if (!ok1) return;
-
-    try {
-      const url = GAS_URL
-        + '?action=generateLetters&id=' + encodeURIComponent(id)
-        + '&secret=' + encodeURIComponent(officerSecret)
-        + '&noJilid=' + encodeURIComponent(formValues.noJilid)
-        + '&bilSurat=' + encodeURIComponent(formValues.bilSurat)
-        + '&tarikhSurat=' + encodeURIComponent(formValues.tarikhSurat);
-      const r = await fetch(url);
-      const j2 = await r.json();
-      if (j2.ok) {
-        const display = `JPNP.SPS.100-2/4/5 Jld ${formValues.noJilid} (${formValues.bilSurat})`;
-        await Swal.fire({ icon:'success', title:'Surat dijana', html:`No Surat: <b>${display}</b>` });
-        // refresh list so new Letters column appears
-        if (officerSecret) await loadRequests();
-        else renderTablesFromCache();
-      } else {
-        Swal.fire({ icon:'error', title:'Gagal jana surat', text: j2.message || JSON.stringify(j2) });
-      }
-    } catch (err) {
-      Swal.fire({ icon:'error', title:'Ralat sambungan', text: err.message || '' });
-    }
+    // feedback & refresh lists
+    await Swal.fire({ icon:'success', title:'Permohonan disemak', text:'Telah dihantar untuk tindakan Timbalan.', timer:1500, showConfirmButton:false });
+    if (officerSecret) await loadRequests();
+    else renderTablesFromCache();
   });
 });
-/* ---------- end replacement block ---------- */
-
+/* ---------- end preapprove replacement ---------- */
 }
 
 /* sendOfficerAction */
@@ -1137,7 +1098,11 @@ async function loadDpList(){
     const res = await fetch(GAS_URL + '?action=listRequests&secret=' + encodeURIComponent(dpSecret));
     const j = await res.json();
     if (!j.ok) return Swal.fire({icon:'error',title:'Gagal fetch.'});
-    const requests = j.requests.filter(r=> r['Status'] && (String(r['Status']).indexOf('READY_FOR_DP')>-1 || r['Status']==='PREAPPROVED'));
+    const requests = j.requests.filter(r=>{
+  const s = String(r['Status'] || '');
+  return s && (s.indexOf('READY_FOR_DP') > -1 || s.indexOf('REVIEWED_FOR_TP') > -1 || s.indexOf('PREAPPROVED') > -1);
+});
+
     const div = document.createElement('div');
     if (requests.length === 0) {
       div.innerHTML = `<p class="text-gray-500 italic">Tiada permohonan sedia untuk kelulusan akhir.</p>`;
