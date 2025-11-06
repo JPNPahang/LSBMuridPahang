@@ -2,6 +2,7 @@
 <html lang="ms">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>LAWATAN MURID SAMBIL BELAJAR</title>
 
@@ -112,6 +113,17 @@
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
+<!-- 🟦 Butang buka menu (muncul hanya di telefon) -->
+<button id="menuToggle"
+  class="md:hidden fixed top-3 left-3 bg-blue-600 text-white px-3 py-2 rounded-lg z-50 shadow-lg">
+  ☰ Menu
+</button>
+
+<!-- 🟧 Butang tutup (X) untuk sidebar telefon -->
+<button id="closeSidebar"
+  class="hidden fixed top-3 right-3 bg-red-600 text-white text-2xl font-bold px-3 py-1 rounded z-50">
+  ×
+</button>
 
   <div class="flex">
     <aside class="sidebar w-64 p-6">
@@ -1329,6 +1341,32 @@ $('sendQueryResponseBtn').addEventListener('click', async ()=>{
 // Initial render: if any cached data exist, render
 renderTablesFromCache();
 
+</script>
+<script>
+  const sidebar = document.querySelector('.sidebar');
+  const menuToggle = document.getElementById('menuToggle');
+  const closeSidebar = document.getElementById('closeSidebar');
+
+  // Buka sidebar (di telefon)
+  menuToggle.addEventListener('click', () => {
+    sidebar.classList.remove('hidden');
+    sidebar.classList.add('fixed', 'z-40', 'bg-gray-900', 'text-white', 'w-64', 'h-screen', 'p-6');
+    closeSidebar.classList.remove('hidden');
+  });
+
+  // Tutup sidebar (butang X)
+  closeSidebar.addEventListener('click', () => {
+    sidebar.classList.add('hidden');
+    closeSidebar.classList.add('hidden');
+  });
+
+  // Tutup sidebar bila klik luar kawasan (di telefon)
+  document.addEventListener('click', (e) => {
+    if (!sidebar.contains(e.target) && !menuToggle.contains(e.target) && window.innerWidth < 768) {
+      sidebar.classList.add('hidden');
+      closeSidebar.classList.add('hidden');
+    }
+  });
 </script>
 
 </body>
