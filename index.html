@@ -280,7 +280,11 @@
       <!-- DP, Query Response, Downloads -->
       <section id="dpSection" class="hidden bg-white p-6 rounded shadow mb-6">
         <h2 class="text-xl font-semibold mb-3">Kelulusan (Timbalan)</h2>
-        <div><button id="loginDP" class="px-4 py-2 bg-blue-600 text-white rounded">Log masuk Timbalan</button></div>
+        <div class="flex items-center gap-3">
+          <button id="loginDP" class="px-4 py-2 bg-blue-600 text-white rounded">Log masuk Timbalan</button>
+          <button id="logoutDP" class="hidden px-3 py-2 bg-red-600 text-white rounded">🚪 Log Keluar</button>
+          <span id="dpLoggedAs" class="ml-2 text-sm text-gray-600"></span>
+        </div>
         <div id="dpRequestsTable" class="mt-4"></div>
       </section>
 
@@ -1094,14 +1098,64 @@ async function sendOfficerAction(id,type,note='',pic='Menengah'){
 
 /* Timbalan login */
 $('loginDP').addEventListener('click', async ()=>{
-  const { value: pw } = await Swal.fire({ title:'Password Timbalan Pengarah', input:'password', showCancelButton:true, confirmButtonText:'Log masuk' });
+  const { value: pw } = await Swal.fire({
+    title: 'Kata Laluan Timbalan Pengarah',
+    input: 'password',
+    showCancelButton: true,
+    confirmButtonText: 'Log Masuk'
+  });
   if (!pw) return;
+
   try {
-    showLoading();
     const res = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(pw));
-    const j = await res.json(); hideLoading();
-    if (j.ok) { dpSecret = pw; Swal.fire({icon:'success',title:'Selamat Datang Tuan Timbalan'}); loadDpList(); } else Swal.fire({icon:'error',title:'Kata laluan salah'});
-  } catch (err){ hideLoading(); Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); }
+    const j = await res.json();
+
+    if (j.ok) {
+      dpSecret = pw;
+
+      const btn = $('loginDP');
+      btn.textContent = 'Akses Dibenarkan';
+      btn.classList.remove('bg-blue-600');
+      btn.classList.add('bg-green-600','animate-gentle-pulse');
+      btn.disabled = true;
+
+      $('logoutDP').classList.remove('hidden');
+      $('dpLoggedAs').textContent = '(Sistem dalam mod sedia)';
+      $('dpLoggedAs').classList.add('text-green-600');
+
+      await Swal.fire({ icon:'success', title:'Selamat Datang Tuan Timbalan Pengarah', timer:1200, showConfirmButton:false });
+      await loadDpList();
+    } else {
+      Swal.fire({ icon:'error', title:'Kata laluan salah' });
+    }
+  } catch (err) {
+    Swal.fire({ icon:'error', title:'Ralat sambungan', text: err.message || '' });
+  }
+});
+
+  $('logoutDP').addEventListener('click', async ()=>{
+  const ok = await Swal.fire({
+    title: 'Log Keluar?',
+    text: 'Adakah anda pasti mahu log keluar?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Ya, Log Keluar',
+    cancelButtonText: 'Batal'
+  });
+  if (!ok.isConfirmed) return;
+
+  dpSecret = null;
+  const btn = $('loginDP');
+  btn.textContent = 'Log masuk Timbalan';
+  btn.classList.remove('bg-green-600','animate-gentle-pulse');
+  btn.classList.add('bg-blue-600');
+  btn.disabled = false;
+
+  $('logoutDP').classList.add('hidden');
+  $('dpLoggedAs').textContent = '';
+
+  $('dpRequestsTable').innerHTML = `<p class="p-4 text-gray-500 italic">Sila log masuk Timbalan untuk melihat senarai permohonan.</p>`;
+  Swal.fire({ icon:'success', title:'Terima kasih Tuan Timbalan Pengarah', timer:1200, showConfirmButton:false });
 });
 
 async function loadDpList(){
