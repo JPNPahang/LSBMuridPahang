@@ -678,7 +678,8 @@ function setActiveTab(btnId){
   $(id).addEventListener('click',()=>{ hideAllSections(); const map={tabIntroBtn:'introSection',tabFormBtn:'formSection',tabOfficerBtn:'officerSection',tabDPBtn:'dpSection',tabQueryResponseBtn:'queryResponseSection',tabDownloadsBtn:'downloadsSection'}; $(map[id]).classList.remove('hidden'); setActiveTab(id); });
 });
 
-// default
+// default: hide everything then show intro
+hideAllSections();
 setActiveTab('tabIntroBtn');
 $('introSection').classList.remove('hidden');
 
@@ -843,6 +844,15 @@ function renderTablesFromCache(){
   const selStatus = $('filterStatus').value.trim();
   const search = ($('searchBox').value || '').trim().toLowerCase();
 
+  // Jika pegawai belum login, jangan paparkan data (elakkan kebocoran cache)
+  if (!officerSecret) {
+    $('tableNew').innerHTML = `<p class="p-4 text-gray-500 italic">Sila log masuk sebagai Pegawai untuk melihat senarai permohonan.</p>`;
+    $('tableQuery').innerHTML = `<p class="p-4 text-gray-500 italic">Sila log masuk sebagai Pegawai untuk melihat senarai permohonan.</p>`;
+    $('tableApproved').innerHTML = `<p class="p-4 text-gray-500 italic">Sila log masuk sebagai Pegawai untuk melihat senarai permohonan.</p>`;
+    return;
+  }
+
+
   const newRows = [], queryRows = [], approvedRows = [];
 
   function matchesSearch(req){
@@ -928,7 +938,9 @@ function renderTablesFromCache(){
       }
     } else if (String(status).indexOf('FINAL_APPROVED')>-1 || 
          String(status).indexOf('READY_FOR_DP')>-1 || 
-         String(status).indexOf('PREAPPROVED')>-1) {
+         String(status).indexOf('PREAPPROVED')>-1 ||
+   String(status).indexOf('REVIEWED_FOR_TP')>-1
+) {
   // approved group -> only Lihat Fail (no query/lulus buttons)
   const letterDate = req['LetterDate'] || req['TarikhSurat'] || req['DateApproved'] || req['ApprovedDate'] || '';
 
