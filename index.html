@@ -1119,11 +1119,35 @@ document.querySelectorAll('.btn-preapprove').forEach(btn=>{
     if (!formValues) return; // batal oleh pengguna
 
     // susun nota yang dihantar ke server (pegawai boleh lihat juga kemudian)
-    const composedNote = `No Jilid: ${formValues.noJilid}, Bil: ${formValues.bilSurat}, Tarikh: ${formValues.tarikhSurat || '-'}, PIC: ${formValues.pic || '-'}${formValues.note ? ' | Catatan: ' + formValues.note : ''}`;
+    // sediakan composedNote untuk rekod pegawai (masih simpan dalam OfficerNote)
+const composedNote = `No Jilid: ${formValues.noJilid}, Bil: ${formValues.bilSurat}, Tarikh: ${formValues.tarikhSurat || '-'}, PIC: ${formValues.pic || '-'}${formValues.note ? ' | Catatan: ' + formValues.note : ''}`;
 
-    // panggil endpoint sedia ada (type='preapprove') — server akan set Status=REVIEWED_FOR_TP dan notify TP
-    const ok = await sendOfficerAction(id, 'preapprove', composedNote, formValues.pic || 'Menengah');
-    if (!ok) return;
+// --- Sediakan options yang dihantar sebagai parameter terasing ke backend ---
+function toIsoDateIfNeeded(s) {
+  if (!s) return '';
+  // jika sudah dalam yyyy-mm-dd return terus
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // jika dd/mm/yyyy atau dd-mm-yyyy -> tukar ke yyyy-mm-dd
+  const cleaned = s.replace(/\//g, '-');
+  const parts = cleaned.split('-');
+  if (parts.length === 3) {
+    // anggap dd-mm-yyyy
+    const dd = parts[0].padStart(2,'0'), mm = parts[1].padStart(2,'0'), yyyy = parts[2];
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return s; // fallback: hantar apa ada
+}
+
+const backendOptions = {
+  letterJilid: formValues.noJilid || '',
+  letterNo: formValues.bilSurat || '',
+  letterDate: toIsoDateIfNeeded(formValues.tarikhSurat || '')
+};
+
+// panggil endpoint preapprove dan hantarkan options
+const ok = await sendOfficerAction(id, 'preapprove', composedNote, formValues.pic || 'Menengah', backendOptions);
+if (!ok) return;
+
 
     await Swal.fire({
       icon: 'success',
@@ -1143,17 +1167,47 @@ document.querySelectorAll('.btn-preapprove').forEach(btn=>{
 
 }
 
-/* sendOfficerAction */
-async function sendOfficerAction(id,type,note='',pic='Menengah'){
-  if (!officerSecret) return Swal.fire({icon:'warning',title:'Sila log masuk sebagai Pegawai untuk tindakan ini.'});
+// GANTIKAN seluruh fungsi sendOfficerAction dengan ini
+async function sendOfficerAction(id, type, note = '', pic = 'Menengah', options = {}) {
+  if (!officerSecret) {
+    return Swal.fire({ icon: 'warning', title: 'Sila log masuk sebagai Pegawai untuk tindakan ini.' });
+  }
   showLoading();
-  const url = GAS_URL + '?action=officerAction&id=' + encodeURIComponent(id) + '&type=' + encodeURIComponent(type) + '&note=' + encodeURIComponent(note) + '&pic=' + encodeURIComponent(pic) + '&secret=' + encodeURIComponent(officerSecret);
+
+  let url = GAS_URL + '?action=officerAction' +
+            '&id=' + encodeURIComponent(id) +
+            '&type=' + encodeURIComponent(type) +
+            '&note=' + encodeURIComponent(note) +
+            '&pic=' + encodeURIComponent(pic) +
+            '&secret=' + encodeURIComponent(officerSecret);
+
+  // Tambah optional params (hanya jika diberikan)
+  if (options.letterJilid !== undefined && options.letterJilid !== null && String(options.letterJilid).length) {
+    url += '&letterJilid=' + encodeURIComponent(options.letterJilid);
+  }
+  if (options.letterNo !== undefined && options.letterNo !== null && String(options.letterNo).length) {
+    url += '&letterNo=' + encodeURIComponent(options.letterNo);
+  }
+  if (options.letterDate !== undefined && options.letterDate !== null && String(options.letterDate).length) {
+    url += '&letterDate=' + encodeURIComponent(options.letterDate);
+  }
+
   try {
-    const r = await fetch(url); const j = await r.json();
+    const r = await fetch(url);
+    const j = await r.json();
     hideLoading();
-    if (j.ok){ await Swal.fire({icon:'success',title:'Berjaya',text:j.message}); await loadRequests(); return true; }
-    else { await Swal.fire({icon:'error',title:'Gagal',text:j.message||JSON.stringify(j)}); return false; }
-  } catch (err){ hideLoading(); Swal.fire({icon:'error',title:'Ralat',text:err.message||''}); return false; }
+    if (!j || !j.ok) {
+      console.error('sendOfficerAction failed', j);
+      Swal.fire({ icon: 'error', title: 'Tindakan gagal', text: (j && j.message) ? j.message : 'Server returned error' });
+      return false;
+    }
+    return true;
+  } catch (err) {
+    hideLoading();
+    console.error('sendOfficerAction catch', err);
+    Swal.fire({ icon: 'error', title: 'Ralat Sambungan', text: String(err) });
+    return false;
+  }
 }
 
 /* Timbalan login */
