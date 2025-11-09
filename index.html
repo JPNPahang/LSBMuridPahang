@@ -910,6 +910,9 @@ function renderTablesFromCache(){
 
     const travelStart = req['Travel Start'] || req['TravelStart'] || req['travelStart'] || '';
     const status = req['Status'] || '';
+// canonical uppercase status untuk semua perbandingan selanjutnya
+const S = String(status || '').toUpperCase().trim();
+
     const noSurat = req['NoSuratFull'] || (req['Letters'] ? `Surat dijana (${String(req['Letters']).split(/\s*;\s*/).filter(Boolean).length})` : (req['OfficerNote'] && (String(req['OfficerNote']).match(/QueryID:([A-Z0-9\-\_]+)/i) || [])[1] ? `Query: ${(String(req['OfficerNote']).match(/QueryID:([A-Z0-9\-\_]+)/i)||[])[1]}` : '-'));
 
     // action buttons
@@ -920,7 +923,7 @@ function renderTablesFromCache(){
         <button data-id="${id}" class="btn-preapprove px-2 py-1 bg-green-600 text-white rounded text-xs">Disemak (TP)</button>
       </div>`;
 
-    if (String(status).indexOf('QUERY') > -1) {
+    if (S.indexOf('QUERY') > -1) {
       const queries = extractQueries(req);
       if (queries.length === 0) {
         const qRow = {
@@ -952,11 +955,11 @@ function renderTablesFromCache(){
           });
         });
       }
-    } else if (String(status).indexOf('FINAL_APPROVED')>-1 || 
-         String(status).indexOf('READY_FOR_DP')>-1 || 
-         String(status).indexOf('PREAPPROVED')>-1 ||
-   String(status).indexOf('REVIEWED_FOR_TP')>-1
-) {
+    } else if (S.indexOf('FINAL_APPROVED') > -1 ||
+           S.indexOf('READY_FOR_DP')   > -1 ||
+           S.indexOf('PREAPPROVED')    > -1 ||
+           S.indexOf('REVIEWED_FOR_TP')> -1) 
+ {
   // approved group -> only Lihat Fail (no query/lulus buttons)
   const letterDate = req['LetterDate'] || req['TarikhSurat'] || req['DateApproved'] || req['ApprovedDate'] || '';
 
@@ -1063,7 +1066,8 @@ function renderTablesFromCache(){
       const id = ev.currentTarget.dataset.id;
       const { value: note } = await Swal.fire({ title:'Catatan (kenapa query):', input:'textarea', inputPlaceholder:'Tulis sebab...', showCancelButton:true, confirmButtonText:'Hantar Query' });
       if (!note) return;
-      await sendOfficerAction(id,'query', note, 'Menengah');
+      const ok = await sendOfficerAction(id,'query', note, 'Menengah');
+      if (ok && officerSecret) await loadRequests();
     });
   });
 
@@ -1071,7 +1075,6 @@ function renderTablesFromCache(){
 document.querySelectorAll('.btn-preapprove').forEach(btn=>{
   btn.addEventListener('click', async ev=>{
     const id = ev.currentTarget.dataset.id;
-
     const { value: formValues } = await Swal.fire({
       title: 'Semak & Hantar kepada Timbalan',
       html: `
@@ -1324,19 +1327,47 @@ async function loadDpList(){
               cancelButtonText: 'Batal',
               width: 700,
               preConfirm: async () => {
-                try {
-                  showLoading();
-                  const r2 = await fetch(GAS_URL + '?action=finalApprove&id=' + encodeURIComponent(req['Request ID']) + '&secret=' + encodeURIComponent(dpSecret));
-                  const j2 = await r2.json();
-                  hideLoading();
-                  if (!j2.ok) throw new Error(j2.message || j2.error || JSON.stringify(j2));
-                  return j2;
-                } catch (err) {
-                  hideLoading();
-                  Swal.showValidationMessage('Gagal menghantar: ' + (err.message || err));
-                  throw err;
-                }
-              }
+  try {
+    showLoading();
+
+    // helper kecil untuk panggil finalApprove
+    async function callFinalApprove() {
+      const r = await fetch(GAS_URL + '?action=finalApprove&id=' + encodeURIComponent(req['Request ID']) + '&secret=' + encodeURIComponent(dpSecret));
+      return await r.json();
+    }
+
+    // 1) Panggil sekali
+    let j2 = await callFinalApprove();
+
+    // 2) Jika ok — terus kembali
+    if (j2 && j2.ok) { hideLoading(); return j2; }
+
+    // 3) Jika unauthorized — cuba semak semula secret dan retry sekali
+    const msg = (j2 && j2.message) ? String(j2.message).toLowerCase() : '';
+    if (msg.indexOf('unauthorized') > -1 || msg.indexOf('unauthorised') > -1) {
+      // cuba semak secret (failover)
+      const ck = await fetch(GAS_URL + '?action=checkSecret&secret=' + encodeURIComponent(dpSecret));
+      const cj = await ck.json();
+      if (cj && cj.ok) {
+        // secret sah menurut server sekarang, ulang panggilan finalApprove sekali
+        j2 = await callFinalApprove();
+        if (j2 && j2.ok) { hideLoading(); return j2; }
+      } else {
+        // jika re-check failed, beritahu user untuk login semula
+        hideLoading();
+        throw new Error('unauthorized (sila log keluar dan masuk semula Timbalan)');
+      }
+    }
+
+    // jika sampai sini masih gagal — beri error message server
+    hideLoading();
+    throw new Error((j2 && j2.message) ? j2.message : JSON.stringify(j2 || 'unknown error'));
+  } catch (err) {
+    hideLoading();
+    Swal.showValidationMessage('Gagal menghantar: ' + (err.message || err));
+    throw err;
+  }
+}
             }).then(result => {
               if (result.isConfirmed) {
                 Swal.fire({icon:'success',title:'Emel dihantar.', text: (result.value && result.value.message) ? result.value.message : ''});
