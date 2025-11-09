@@ -1067,57 +1067,79 @@ function renderTablesFromCache(){
     });
   });
 
- /* ---------- Pegawai isi borang No Jilid / Bil / Tarikh / PIC ---------- */
+/* ---------- Pegawai isi borang No Jilid / Bil / Tarikh / PIC ---------- */
 document.querySelectorAll('.btn-preapprove').forEach(btn=>{
   btn.addEventListener('click', async ev=>{
     const id = ev.currentTarget.dataset.id;
 
     const { value: formValues } = await Swal.fire({
-      title: 'Semakan Pegawai (Isi Maklumat)',
+      title: 'Semak & Hantar kepada Timbalan',
       html: `
-        <input id="swal_noJilid" class="swal2-input" placeholder="No Jilid (contoh: 24)">
-        <input id="swal_bilSurat" class="swal2-input" placeholder="Bil Surat (contoh: 25)">
-        <input id="swal_tarikhSurat" type="date" class="swal2-input" value="${new Date().toISOString().slice(0,10)}">
-        <select id="swal_pic" class="swal2-input">
-          <option value="Menengah" selected>Menengah</option>
-          <option value="Rendah">Rendah</option>
-        </select>
+        <div style="text-align:left">
+          <label for="swal_noJilid" style="font-weight:600;margin-bottom:4px;display:block">No Jilid (contoh: 24)</label>
+          <input id="swal_noJilid" class="swal2-input" placeholder="No Jilid (contoh: 24)">
+
+          <label for="swal_bilSurat" style="font-weight:600;margin-bottom:4px;display:block">Bil Surat (contoh: 25)</label>
+          <input id="swal_bilSurat" class="swal2-input" placeholder="Bil Surat (contoh: 25)">
+
+          <label for="swal_tarikhSurat" style="font-weight:600;margin-bottom:4px;display:block">Tarikh Surat</label>
+          <input id="swal_tarikhSurat" type="date" class="swal2-input" value="${new Date().toISOString().slice(0,10)}">
+
+          <label for="swal_pic" style="font-weight:600;margin-bottom:4px;display:block">PIC</label>
+          <select id="swal_pic" class="swal2-input">
+            <option value="Menengah" selected>Menengah</option>
+            <option value="Rendah">Rendah</option>
+          </select>
+
+          <label for="swal_note" style="font-weight:600;margin-bottom:4px;display:block;margin-top:8px">Catatan pendek untuk Timbalan (pilihan)</label>
+          <textarea id="swal_note" class="swal2-textarea" placeholder="Catatan pendek untuk Timbalan (pilihan)..."></textarea>
+        </div>
       `,
       focusConfirm: false,
       showCancelButton: true,
       confirmButtonText: 'Hantar ke Timbalan',
+      cancelButtonText: 'Batal',
       preConfirm: () => {
-        const noJ = document.getElementById('swal_noJilid').value.trim();
-        const bil = document.getElementById('swal_bilSurat').value.trim();
-        const tar = document.getElementById('swal_tarikhSurat').value;
-        const pic = document.getElementById('swal_pic').value;
+        // ambil nilai
+        const noJ = (document.getElementById('swal_noJilid')||{}).value.trim();
+        const bil = (document.getElementById('swal_bilSurat')||{}).value.trim();
+        const tar = (document.getElementById('swal_tarikhSurat')||{}).value;
+        const pic = (document.getElementById('swal_pic')||{}).value;
+        const note = (document.getElementById('swal_note')||{}).value.trim();
+
+        // wajibkan sekurang-kurangnya No Jilid & Bil Surat
         if (!noJ || !bil) {
-          Swal.showValidationMessage('Sila isi No Jilid dan Bil Surat');
+          Swal.showValidationMessage('Sila isi sekurang-kurangnya No Jilid dan Bil Surat');
           return false;
         }
-        return { noJilid: noJ, bilSurat: bil, tarikhSurat: tar, pic };
+        return { noJilid: noJ, bilSurat: bil, tarikhSurat: tar, pic, note };
       }
     });
 
-    if (!formValues) return; // batal
+    if (!formValues) return; // batal oleh pengguna
 
-    // Hantar ke server — hanya tanda disemak (tiada surat dijana)
-    const note = `No Jilid: ${formValues.noJilid}, Bil: ${formValues.bilSurat}, Tarikh: ${formValues.tarikhSurat}, PIC: ${formValues.pic}`;
-    const ok = await sendOfficerAction(id, 'preapprove', note, formValues.pic);
+    // susun nota yang dihantar ke server (pegawai boleh lihat juga kemudian)
+    const composedNote = `No Jilid: ${formValues.noJilid}, Bil: ${formValues.bilSurat}, Tarikh: ${formValues.tarikhSurat || '-'}, PIC: ${formValues.pic || '-'}${formValues.note ? ' | Catatan: ' + formValues.note : ''}`;
+
+    // panggil endpoint sedia ada (type='preapprove') — server akan set Status=REVIEWED_FOR_TP dan notify TP
+    const ok = await sendOfficerAction(id, 'preapprove', composedNote, formValues.pic || 'Menengah');
     if (!ok) return;
 
     await Swal.fire({
       icon: 'success',
       title: 'Maklumat disimpan',
-      text: 'Permohonan telah dihantar ke Timbalan untuk kelulusan.',
-      timer: 1600,
+      text: 'Permohonan telah dihantar ke Timbalan untuk tindakan.',
+      timer: 1400,
       showConfirmButton: false
     });
+
+    // refresh senarai
     if (officerSecret) await loadRequests();
     else renderTablesFromCache();
   });
 });
 /* ---------- Tamat kod Pegawai isi borang ---------- */
+
 
 }
 
