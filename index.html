@@ -1067,32 +1067,58 @@ function renderTablesFromCache(){
     });
   });
 
- /* ---------- REPLACEMENT: preapprove only (no generateLetters) ---------- */
+ /* ---------- Pegawai isi borang No Jilid / Bil / Tarikh / PIC ---------- */
 document.querySelectorAll('.btn-preapprove').forEach(btn=>{
   btn.addEventListener('click', async ev=>{
     const id = ev.currentTarget.dataset.id;
-    // optional short note to record for Timbalan
-    const { value: note } = await Swal.fire({
-      title: 'Semak & Hantar kepada Timbalan',
-      input: 'textarea',
-      inputPlaceholder: 'Catatan pendek untuk Timbalan (pilihan)…',
+
+    const { value: formValues } = await Swal.fire({
+      title: 'Semakan Pegawai (Isi Maklumat)',
+      html: `
+        <input id="swal_noJilid" class="swal2-input" placeholder="No Jilid (contoh: 24)">
+        <input id="swal_bilSurat" class="swal2-input" placeholder="Bil Surat (contoh: 25)">
+        <input id="swal_tarikhSurat" type="date" class="swal2-input" value="${new Date().toISOString().slice(0,10)}">
+        <select id="swal_pic" class="swal2-input">
+          <option value="Menengah" selected>Menengah</option>
+          <option value="Rendah">Rendah</option>
+        </select>
+      `,
+      focusConfirm: false,
       showCancelButton: true,
       confirmButtonText: 'Hantar ke Timbalan',
-      cancelButtonText: 'Batal'
+      preConfirm: () => {
+        const noJ = document.getElementById('swal_noJilid').value.trim();
+        const bil = document.getElementById('swal_bilSurat').value.trim();
+        const tar = document.getElementById('swal_tarikhSurat').value;
+        const pic = document.getElementById('swal_pic').value;
+        if (!noJ || !bil) {
+          Swal.showValidationMessage('Sila isi No Jilid dan Bil Surat');
+          return false;
+        }
+        return { noJilid: noJ, bilSurat: bil, tarikhSurat: tar, pic };
+      }
     });
-    if (note === undefined) return; // user cancelled
 
-    // only mark as preapprove (server should set REVIEWED_FOR_TP or READY_FOR_DP)
-    const ok = await sendOfficerAction(id, 'preapprove', note || '', 'Menengah');
+    if (!formValues) return; // batal
+
+    // Hantar ke server — hanya tanda disemak (tiada surat dijana)
+    const note = `No Jilid: ${formValues.noJilid}, Bil: ${formValues.bilSurat}, Tarikh: ${formValues.tarikhSurat}, PIC: ${formValues.pic}`;
+    const ok = await sendOfficerAction(id, 'preapprove', note, formValues.pic);
     if (!ok) return;
 
-    // feedback & refresh lists
-    await Swal.fire({ icon:'success', title:'Permohonan disemak', text:'Telah dihantar untuk tindakan Timbalan.', timer:1500, showConfirmButton:false });
+    await Swal.fire({
+      icon: 'success',
+      title: 'Maklumat disimpan',
+      text: 'Permohonan telah dihantar ke Timbalan untuk kelulusan.',
+      timer: 1600,
+      showConfirmButton: false
+    });
     if (officerSecret) await loadRequests();
     else renderTablesFromCache();
   });
 });
-/* ---------- end preapprove replacement ---------- */
+/* ---------- Tamat kod Pegawai isi borang ---------- */
+
 }
 
 /* sendOfficerAction */
