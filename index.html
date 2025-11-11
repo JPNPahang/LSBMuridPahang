@@ -2,8 +2,7 @@
 <html lang="ms">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>LAWATAN MURID SAMBIL BELAJAR</title>
 
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
@@ -137,7 +136,7 @@
 
       <nav class="space-y-2">
         <button id="tabIntroBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800 nav-tab">Pengenalan</button>
-        <button id="tabFormBtn" class="w-full text-left px-4 py-2 rounded nav-tab tab-active">Borang Permohonan</button>
+        <button id="tabFormBtn" class="w-full text-left px-4 py-2 rounded nav-tab">Borang Permohonan</button>
         <button id="tabOfficerBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800 nav-tab">Semakan (Pegawai)</button>
         <button id="tabDPBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800 nav-tab">Kelulusan (Timbalan)</button>
         <button id="tabQueryResponseBtn" class="w-full text-left px-4 py-2 rounded hover:bg-gray-800 nav-tab">Tindak Balas Query</button>
@@ -244,7 +243,7 @@
 
     <!-- Logout button (hidden until login) -->
     <button id="logoutOfficer" class="btn-logout hidden-inline" title="Log Keluar Pegawai">🚪LOGOUT</button>
-
+<button id="refreshOfficer" class="px-3 py-1 bg-indigo-600 text-white rounded text-sm">Refresh</button>
     <span id="officerLoggedAs" class="ml-3 text-sm text-gray-600"></span>
   </div>
 
@@ -568,75 +567,161 @@
     <div class="bg-white p-6 rounded shadow text-center"><div class="mb-2">Sila tunggu — proses sedang dijalankan...</div></div>
   </div>
 
-<script>
-/* CONFIG */
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbx_B7hzQrDtlks5fAynamk1s143zUvCxVWEQwfeNC3-BmKCAR9CZ27Sqml7qhIWZN3O/exec';
+<!-- load pdf-lib first, then our script -->
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  <script>
+  /* CONFIG */
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbx_B7hzQrDtlks5fAynamk1s143zUvCxVWEQwfeNC3-BmKCAR9CZ27Sqml7qhIWZN3O/exec';
 
-const $ = id => document.getElementById(id);
-function showLoading(){ $('loadingModal').classList.remove('hidden'); $('loadingModal').classList.add('flex'); }
-function hideLoading(){ $('loadingModal').classList.add('hidden'); $('loadingModal').classList.remove('flex'); }
+  const $ = id => document.getElementById(id);
+  function showLoading(){ $('loadingModal').classList.remove('hidden'); $('loadingModal').classList.add('flex'); }
+  function hideLoading(){ $('loadingModal').classList.add('hidden'); $('loadingModal').classList.remove('flex'); }
 
-/* --- State --- */
-let requestsCache = []; // last fetched
-let officerSecret = null;
-let dpSecret = null;
+  /* --- State --- */
+  let requestsCache = []; // last fetched
+  let officerSecret = null;
+  let dpSecret = null;
 
-/* Helpers */
-function fmtDateToDisplay(isoOrRaw){
-  if (!isoOrRaw) return '';
-  const d = new Date(isoOrRaw);
-  if (isNaN(d.getTime())) {
-    const m = String(isoOrRaw).match(/(\d{4})-(\d{2})-(\d{2})/);
-    if (!m) return String(isoOrRaw);
-    return `${m[3]}-${m[2]}-${m[1]}`;
-  }
-  const dd = String(d.getDate()).padStart(2,'0');
-  const mm = String(d.getMonth()+1).padStart(2,'0');
-  const yyyy = d.getFullYear();
-  return `${dd}-${mm}-${yyyy}`;
-}
-
-/* Date bounds (start + max 4 days) */
-(function(){
-  const start = $('travelStart'), end = $('travelEnd');
-  if (!start||!end) return;
-  const setMin = () => {
-    const today = new Date(); today.setHours(0,0,0,0);
-    const min = new Date(today.getTime() + 30*24*60*60*1000);
-    start.min = `${min.getFullYear()}-${String(min.getMonth()+1).padStart(2,'0')}-${String(min.getDate()).padStart(2,'0')}`;
-  };
-  const updateEndBounds = () => {
-    if (!start.value) { end.removeAttribute('max'); return; }
-    const s = new Date(start.value);
-    const max = new Date(s.getTime() + 4*24*60*60*1000);
-    end.min = start.value;
-    end.max = `${max.getFullYear()}-${String(max.getMonth()+1).padStart(2,'0')}-${String(max.getDate()).padStart(2,'0')}`;
-    if (end.value) {
-      const cur = new Date(end.value);
-      if (cur < s) end.value = start.value;
-      if (cur > max) end.value = end.max;
+  /* Helpers */
+  function fmtDateToDisplay(isoOrRaw){
+    if (!isoOrRaw) return '';
+    const d = new Date(isoOrRaw);
+    if (isNaN(d.getTime())) {
+      const m = String(isoOrRaw).match(/(\d{4})-(\d{2})-(\d{2})/);
+      if (!m) return String(isoOrRaw);
+      return `${m[3]}-${m[2]}-${m[1]}`;
     }
-  };
-  setMin(); start.addEventListener('change', updateEndBounds); updateEndBounds();
-})();
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yyyy = d.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  }
 
-/* Leaders */
-let leaders = [];
-function renderLeaders(){ const c=$('leaderList'); c.innerHTML=''; if (leaders.length===0) leaders.push({name:'',phone:''});
-  leaders.forEach((l,i)=>{ const div=document.createElement('div'); div.className='flex gap-2 items-center';
-    div.innerHTML = `<input class="flex-1 border p-2 rounded leaderName" placeholder="Nama Ketua ${i+1}" data-index="${i}" value="${l.name||''}" />
-                     <input class="w-40 border p-2 rounded leaderPhone" placeholder="No. Tel" data-index="${i}" value="${l.phone||''}" />
-                     <button type="button" data-index="${i}" class="removeLead bg-red-500 text-white px-2 rounded">X</button>`; c.appendChild(div);
-  });
-  c.querySelectorAll('.removeLead').forEach(b=>b.addEventListener('click',e=>{leaders.splice(+e.target.dataset.index,1); renderLeaders();}));
-  c.querySelectorAll('.leaderName').forEach(i=>i.addEventListener('input',e=>leaders[+e.target.dataset.index].name=e.target.value));
-  c.querySelectorAll('.leaderPhone').forEach(i=>i.addEventListener('input',e=>leaders[+e.target.dataset.index].phone=e.target.value));
-}
-$('addLeader').addEventListener('click',()=>{leaders.push({name:'',phone:''}); renderLeaders();});
-renderLeaders();
+  /* Date bounds (start + max 4 days) */
+  (function(){
+    const start = $('travelStart'), end = $('travelEnd');
+    if (!start||!end) return;
+    const setMin = () => {
+      const today = new Date(); today.setHours(0,0,0,0);
+      const min = new Date(today.getTime() + 30*24*60*60*1000);
+      start.min = `${min.getFullYear()}-${String(min.getMonth()+1).padStart(2,'0')}-${String(min.getDate()).padStart(2,'0')}`;
+    };
+    const updateEndBounds = () => {
+      if (!start.value) { end.removeAttribute('max'); return; }
+      const s = new Date(start.value);
+      const max = new Date(s.getTime() + 4*24*60*60*1000);
+      end.min = start.value;
+      end.max = `${max.getFullYear()}-${String(max.getMonth()+1).padStart(2,'0')}-${String(max.getDate()).padStart(2,'0')}`;
+      if (end.value) {
+        const cur = new Date(end.value);
+        if (cur < s) end.value = start.value;
+        if (cur > max) end.value = end.max;
+      }
+    };
+    setMin(); start.addEventListener('change', updateEndBounds); updateEndBounds();
+  })();
 
-/* file -> base64 */
-async function fileToBase64(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res({name:file.name,type:file.type||'application/pdf',data:r.result.split(',')[1]}); r.onerror=rej; r.readAsDataURL(file); }); }
+  /* Leaders */
+  let leaders = [];
+  function renderLeaders(){ const c=$('leaderList'); if(!c) return; c.innerHTML=''; if (leaders.length===0) leaders.push({name:'',phone:''});
+    leaders.forEach((l,i)=>{ const div=document.createElement('div'); div.className='flex gap-2 items-center';
+      div.innerHTML = `<input class="flex-1 border p-2 rounded leaderName" placeholder="Nama Ketua ${i+1}" data-index="${i}" value="${l.name||''}" />
+                       <input class="w-40 border p-2 rounded leaderPhone" placeholder="No. Tel" data-index="${i}" value="${l.phone||''}" />
+                       <button type="button" data-index="${i}" class="removeLead bg-red-500 text-white px-2 rounded">X</button>`; c.appendChild(div);
+    });
+    c.querySelectorAll('.removeLead').forEach(b=>b.addEventListener('click',e=>{leaders.splice(+e.target.dataset.index,1); renderLeaders();}));
+    c.querySelectorAll('.leaderName').forEach(i=>i.addEventListener('input',e=>leaders[+e.target.dataset.index].name=e.target.value));
+    c.querySelectorAll('.leaderPhone').forEach(i=>i.addEventListener('input',e=>leaders[+e.target.dataset.index].phone=e.target.value));
+  }
+  if ($('addLeader')) $('addLeader').addEventListener('click',()=>{leaders.push({name:'',phone:''}); renderLeaders();});
+  renderLeaders();
+
+  /* file -> base64 */
+  async function fileToBase64(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res({name:file.name,type:file.type||'application/pdf',data:r.result.split(',')[1]}); r.onerror=rej; r.readAsDataURL(file); }); }
+
+  // ===== pdf-lib helpers =====
+  function base64ToUint8Array(base64) {
+    const binary = atob(base64);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+  function uint8ArrayToBlob(u8, mime='application/pdf') {
+    return new Blob([u8], { type: mime });
+  }
+  function blobToFile(blob, name) {
+    try { return new File([blob], name, { type: blob.type }); }
+    catch(e) { blob.name = name; return blob; }
+  }
+
+  async function annotatePdfAndUpload({requestId, fileBlobOrFile, stampText='Disemak', stampImageFile=null, sourceLabel='ANNOTATED'}) {
+    if (!fileBlobOrFile) throw new Error('missing file');
+    const ab = await (fileBlobOrFile.arrayBuffer ? fileBlobOrFile.arrayBuffer() : fileBlobOrFile);
+    const pdfDoc = await PDFLib.PDFDocument.load(ab);
+    const helv = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+    let imgEmbed = null;
+    if (stampImageFile) {
+      const imgAB = await stampImageFile.arrayBuffer();
+      const mime = stampImageFile.type || 'image/png';
+      imgEmbed = (mime==='image/png') ? await pdfDoc.embedPng(imgAB) : await pdfDoc.embedJpg(imgAB);
+    }
+
+    const pages = pdfDoc.getPages();
+    for (let i = 0; i < pages.length; i++) {
+      const p = pages[i];
+      const { width, height } = p.getSize();
+      const fontSize = Math.max(10, Math.min(36, Math.floor(Math.min(width, height) / 18)));
+      const text = stampText || `Disemak ${new Date().toLocaleDateString()}`;
+      const textWidth = helv.widthOfTextAtSize(text, fontSize);
+      const margin = 18;
+      p.drawText(text, {
+        x: width - textWidth - margin,
+        y: margin + (imgEmbed ? 40 : 0),
+        size: fontSize,
+        font: helv,
+        color: PDFLib.rgb(0.85, 0.1, 0.1),
+        opacity: 0.95
+      });
+      if (imgEmbed) {
+        const scaled = imgEmbed.scale( Math.min(120 / imgEmbed.width, 60 / imgEmbed.height) );
+        p.drawImage(imgEmbed, {
+          x: margin,
+          y: margin,
+          width: scaled.width,
+          height: scaled.height,
+          opacity: 0.95
+        });
+      }
+    }
+
+    const modifiedBytes = await pdfDoc.save();
+    // convert to base64
+    let binary = '';
+    const u8 = new Uint8Array(modifiedBytes);
+    for (let i = 0; i < u8.length; i++) binary += String.fromCharCode(u8[i]);
+    const b64 = btoa(binary);
+
+    const fileName = 'ANNOTATED_' + (fileBlobOrFile.name || ('file_' + Date.now() + '.pdf'));
+    const payload = { requestId: requestId || '', fileName: fileName, dataBase64: b64, sourceLabel: sourceLabel };
+    const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ type:'uploadAnnotatedPdf', payload }) });
+    return await res.json();
+  }
+
+  async function fetchDriveFileAsFile(driveUrlOrId) {
+    let id = '';
+    const m = String(driveUrlOrId||'').match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+    if (m) id = m[1];
+    else id = driveUrlOrId;
+    if (!id) throw new Error('Invalid Drive URL/ID');
+    const r = await fetch(GAS_URL + '?action=fetchFileBase64&fileId=' + encodeURIComponent(id));
+    const j = await r.json();
+    if (!j.ok || !j.dataBase64) throw new Error('fetchFileBase64 failed');
+    const u8 = base64ToUint8Array(j.dataBase64);
+    const blob = uint8ArrayToBlob(u8, j.mimeType || 'application/pdf');
+    return blobToFile(blob, j.name || ('file_' + id + '.pdf'));
+  }
+  // ===== end pdf-lib helpers =====
 
 /* Submit permohonan */
 $('permohonanForm').addEventListener('submit', async function(ev){
@@ -1035,31 +1120,106 @@ const S = String(status || '').toUpperCase().trim();
     $('tableApproved').appendChild(makeTable(approvedRows, colsApp));
   }
 
-  /* Wire up action buttons (view-files, query, preapprove) after render */
-  document.querySelectorAll('.view-files').forEach(btn=>{
-    btn.addEventListener('click', (ev)=>{
-      const id = ev.currentTarget.dataset.id;
-      const req = (requestsCache || []).find(r => String(r['Request ID']) === String(id));
-      if (!req) return Swal.fire({ icon:'error', title:'Tidak jumpa rekod' });
+  /* view-files with Annotate button */
+document.querySelectorAll('.view-files').forEach(btn=>{
+  btn.addEventListener('click', async (ev)=>{
+    const id = ev.currentTarget.dataset.id;
+    const req = (requestsCache || []).find(r => String(r['Request ID']) === String(id));
+    if (!req) return Swal.fire({ icon:'error', title:'Tidak jumpa rekod' });
 
-      // For each expected file key, support multiple URLs separated by ';'
-      const filePairs = [
-        {label:'KERTAS KERJA', raw: req['File_KERTAS_KERJA'] || req['kertasKerjaUrl'] || ''},
-        {label:'MAKLUMAT ANGGOTA', raw: req['File_MAKLUMAT_ANGGOTA'] || req['maklumatAnggotaUrl'] || ''},
-        {label:'PERMIT BAS', raw: req['File_PERMIT_BAS'] || req['permitBasUrl'] || ''},
-        {label:'LESEN PEMANDU', raw: req['File_LESEN_PEMANDU'] || req['lesenPemanduUrl'] || ''},
-        {label:'INTIPATI TAKLIMAT', raw: req['File_TAKLIMAT'] || req['taklimatUrl'] || ''}
-      ];
+    const filePairs = [
+      {label:'KERTAS KERJA', raw: req['File_KERTAS_KERJA'] || req['kertasKerjaUrl'] || ''},
+      {label:'MAKLUMAT ANGGOTA', raw: req['File_MAKLUMAT_ANGGOTA'] || req['maklumatAnggotaUrl'] || ''},
+      {label:'PERMIT BAS', raw: req['File_PERMIT_BAS'] || req['permitBasUrl'] || ''},
+      {label:'LESEN PEMANDU', raw: req['File_LESEN_PEMANDU'] || req['lesenPemanduUrl'] || ''},
+      {label:'INTIPATI TAKLIMAT', raw: req['File_TAKLIMAT'] || req['taklimatUrl'] || ''}
+    ];
 
-      const html = filePairs.map(fp=>{
-        const urls = String(fp.raw||'').split(/\s*;\s*/).filter(Boolean);
-        if (urls.length === 0) return `<p><strong>${fp.label}:</strong> <em>Tiada fail</em></p>`;
-        const links = urls.map((u,i)=>`<div><a href="${u}" target="_blank">Buka ${fp.label} ${urls.length>1?('('+ (i+1) +')'):''}</a></div>`).join('');
-        return `<p><strong>${fp.label}:</strong><br/>${links}</p>`;
-      }).join('');
-      Swal.fire({ title:'Fail Permohonan', html, width:700, showCloseButton:true, confirmButtonText:'Tutup' });
+    const html = filePairs.map(fp=>{
+      const urls = String(fp.raw||'').split(/\s*;\s*/).filter(Boolean);
+      if (urls.length === 0) return `<p><strong>${fp.label}:</strong> <em>Tiada fail</em></p>`;
+      const links = urls.map((u,i)=>`<div><a href="${u}" target="_blank">Buka ${fp.label} ${urls.length>1?('('+ (i+1) +')'):''}</a></div>`).join('');
+      return `<p><strong>${fp.label}:</strong><br/>${links}</p>`;
+    }).join('');
+
+    // Add annotate UI: button to open stamp dialog
+    const annotateBtnHtml = `<div style="margin-top:12px; text-align:left;">
+      <button id="swalAnnotateBtn" class="swal2-confirm swal2-styled" style="background:#16a34a;border:0;margin-top:8px">Annotate / Tambah Cop</button>
+    </div>`;
+
+    await Swal.fire({
+      title: 'Fail Permohonan',
+      html: html + annotateBtnHtml,
+      width: 800,
+      showCloseButton: true,
+      showCancelButton: true,
+      confirmButtonText: 'Tutup'
     });
+
+    // wire up the annotate button (after modal open)
+    const aBtn = document.getElementById('swalAnnotateBtn');
+    if (!aBtn) return;
+    aBtn.addEventListener('click', async () => {
+      // open modal to pick which file (pick first url of chosen category) and stamp options
+      const pickHtml = `
+        <div style="text-align:left">
+          <label style="font-weight:600">Pilih Fail (copy/paste pautan Drive atau URL):</label>
+          <input id="swal_fileUrl" class="swal2-input" placeholder="paste pautan fail di sini" />
+          <label style="font-weight:600;margin-top:8px">Teks Stamp (contoh: DISemak — warna merah)</label>
+          <input id="swal_stampText" class="swal2-input" placeholder="DISemak oleh Unit ..." />
+          <label style="font-weight:600;margin-top:8px">Muat naik Imej Cop (PNG/JPG) — pilihan</label>
+          <input id="swal_stampImage" type="file" accept="image/png,image/jpeg" class="swal2-file" />
+        </div>
+      `;
+      const { value: values } = await Swal.fire({
+        title: 'Annotate PDF',
+        html: pickHtml,
+        showCancelButton: true,
+        confirmButtonText: 'Mula Annotate & Simpan',
+        preConfirm: () => {
+          const fileUrl = document.getElementById('swal_fileUrl').value.trim();
+          const stampText = document.getElementById('swal_stampText').value.trim();
+          const imgInput = document.getElementById('swal_stampImage');
+          const imageFile = (imgInput && imgInput.files && imgInput.files[0]) ? imgInput.files[0] : null;
+          if (!fileUrl) Swal.showValidationMessage('Sila masukkan pautan fail Drive terlebih dahulu (atau URL).');
+          return { fileUrl, stampText, imageFile };
+        }
+      });
+      if (!values) return;
+
+      try {
+        showLoading();
+        // fetch file from Drive via server (fetchFileBase64)
+        const driveFile = await fetchDriveFileAsFile(values.fileUrl);
+        // call annotate function -> upload to server
+        const res = await annotatePdfAndUpload({
+          requestId: id,
+          fileBlobOrFile: driveFile,
+          stampText: values.stampText || ('Disemak ' + new Date().toLocaleDateString()),
+          stampImageFile: values.imageFile || null,
+          sourceLabel: 'ANNOTATED'
+        });
+        hideLoading();
+        if (res && res.ok) {
+          Swal.fire({ icon:'success', title:'Berjaya', text:'PDF telah dikemaskini dan disimpan di Drive.' });
+          // update local cache: append new URL to request row if provided
+          if (res.url) {
+            // append to Letters or proper File_* column if necessary
+            // (best-effort) — reload list if officer is logged in
+            if (officerSecret) await loadRequests();
+          }
+        } else {
+          Swal.fire({ icon:'error', title:'Gagal', text: (res && (res.message||res.error)) ? (res.message||res.error) : 'Tidak berjaya' });
+        }
+      } catch (err) {
+        hideLoading();
+        Swal.fire({ icon:'error', title:'Ralat', text: err.message || String(err) });
+      }
+    });
+
   });
+});
+
 
   document.querySelectorAll('.btn-query').forEach(btn=>{
     btn.addEventListener('click', async ev=>{
