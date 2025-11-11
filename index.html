@@ -1120,7 +1120,7 @@ const S = String(status || '').toUpperCase().trim();
     $('tableApproved').appendChild(makeTable(approvedRows, colsApp));
   }
 
-  /* view-files with Annotate button */
+ /* view-files with Annotate button */
 document.querySelectorAll('.view-files').forEach(btn=>{
   btn.addEventListener('click', async (ev)=>{
     const id = ev.currentTarget.dataset.id;
@@ -1142,7 +1142,6 @@ document.querySelectorAll('.view-files').forEach(btn=>{
       return `<p><strong>${fp.label}:</strong><br/>${links}</p>`;
     }).join('');
 
-    // Add annotate UI: button to open stamp dialog
     const annotateBtnHtml = `<div style="margin-top:12px; text-align:left;">
       <button id="swalAnnotateBtn" class="swal2-confirm swal2-styled" style="background:#16a34a;border:0;margin-top:8px">Annotate / Tambah Cop</button>
     </div>`;
@@ -1153,74 +1152,62 @@ document.querySelectorAll('.view-files').forEach(btn=>{
       width: 800,
       showCloseButton: true,
       showCancelButton: true,
-      confirmButtonText: 'Tutup'
-    });
+      confirmButtonText: 'Tutup',
+      didOpen: () => {
+        // modal DOM kini sudah tersedia — bind the annotate button
+        const aBtn = document.getElementById('swalAnnotateBtn');
+        if (!aBtn) return;
+        aBtn.addEventListener('click', async () => {
+          const pickHtml = `
+            <div style="text-align:left">
+              <label style="font-weight:600">Pilih Fail (copy/paste pautan Drive atau URL):</label>
+              <input id="swal_fileUrl" class="swal2-input" placeholder="paste pautan fail di sini" />
+              <label style="font-weight:600;margin-top:8px">Teks Stamp (contoh: DISemak — warna merah)</label>
+              <input id="swal_stampText" class="swal2-input" placeholder="DISemak oleh Unit ..." />
+              <label style="font-weight:600;margin-top:8px">Muat naik Imej Cop (PNG/JPG) — pilihan</label>
+              <input id="swal_stampImage" type="file" accept="image/png,image/jpeg" class="swal2-file" />
+            </div>
+          `;
+          const { value: values } = await Swal.fire({
+            title: 'Annotate PDF',
+            html: pickHtml,
+            showCancelButton: true,
+            confirmButtonText: 'Mula Annotate & Simpan',
+            preConfirm: () => {
+              const fileUrl = document.getElementById('swal_fileUrl').value.trim();
+              const stampText = document.getElementById('swal_stampText').value.trim();
+              const imgInput = document.getElementById('swal_stampImage');
+              const imageFile = (imgInput && imgInput.files && imgInput.files[0]) ? imgInput.files[0] : null;
+              if (!fileUrl) Swal.showValidationMessage('Sila masukkan pautan fail Drive terlebih dahulu (atau URL).');
+              return { fileUrl, stampText, imageFile };
+            }
+          });
+          if (!values) return;
 
-    // wire up the annotate button (after modal open)
-    const aBtn = document.getElementById('swalAnnotateBtn');
-    if (!aBtn) return;
-    aBtn.addEventListener('click', async () => {
-      // open modal to pick which file (pick first url of chosen category) and stamp options
-      const pickHtml = `
-        <div style="text-align:left">
-          <label style="font-weight:600">Pilih Fail (copy/paste pautan Drive atau URL):</label>
-          <input id="swal_fileUrl" class="swal2-input" placeholder="paste pautan fail di sini" />
-          <label style="font-weight:600;margin-top:8px">Teks Stamp (contoh: DISemak — warna merah)</label>
-          <input id="swal_stampText" class="swal2-input" placeholder="DISemak oleh Unit ..." />
-          <label style="font-weight:600;margin-top:8px">Muat naik Imej Cop (PNG/JPG) — pilihan</label>
-          <input id="swal_stampImage" type="file" accept="image/png,image/jpeg" class="swal2-file" />
-        </div>
-      `;
-      const { value: values } = await Swal.fire({
-        title: 'Annotate PDF',
-        html: pickHtml,
-        showCancelButton: true,
-        confirmButtonText: 'Mula Annotate & Simpan',
-        preConfirm: () => {
-          const fileUrl = document.getElementById('swal_fileUrl').value.trim();
-          const stampText = document.getElementById('swal_stampText').value.trim();
-          const imgInput = document.getElementById('swal_stampImage');
-          const imageFile = (imgInput && imgInput.files && imgInput.files[0]) ? imgInput.files[0] : null;
-          if (!fileUrl) Swal.showValidationMessage('Sila masukkan pautan fail Drive terlebih dahulu (atau URL).');
-          return { fileUrl, stampText, imageFile };
-        }
-      });
-      if (!values) return;
-
-      try {
-        showLoading();
-        // fetch file from Drive via server (fetchFileBase64)
-        const driveFile = await fetchDriveFileAsFile(values.fileUrl);
-        // call annotate function -> upload to server
-        const res = await annotatePdfAndUpload({
-          requestId: id,
-          fileBlobOrFile: driveFile,
-          stampText: values.stampText || ('Disemak ' + new Date().toLocaleDateString()),
-          stampImageFile: values.imageFile || null,
-          sourceLabel: 'ANNOTATED'
-        });
-        hideLoading();
-        if (res && res.ok) {
-          Swal.fire({ icon:'success', title:'Berjaya', text:'PDF telah dikemaskini dan disimpan di Drive.' });
-          // update local cache: append new URL to request row if provided
-          if (res.url) {
-            // append to Letters or proper File_* column if necessary
-            // (best-effort) — reload list if officer is logged in
-            if (officerSecret) await loadRequests();
+          try {
+            showLoading();
+            const driveFile = await fetchDriveFileAsFile(values.fileUrl);
+            const res = await annotatePdfAndUpload({
+              requestId: id,
+              fileBlobOrFile: driveFile,
+              stampText: values.stampText || ('Disemak ' + new Date().toLocaleDateString()),
+              stampImageFile: values.imageFile || null,
+              sourceLabel: 'ANNOTATED'
+            });
+            hideLoading();
+            if (res && res.ok) {
+              Swal.fire({ icon:'success', title:'Berjaya', text:'PDF telah dikemaskini dan disimpan di Drive.' });
+              if (res.url && officerSecret) await loadRequests();
+            } else {
+              Swal.fire({ icon:'error', title:'Gagal', text: (res && (res.message||res.error)) ? (res.message||res.error) : 'Tidak berjaya' });
+            }
+          } catch (err) {
+            hideLoading();
+            Swal.fire({ icon:'error', title:'Ralat', text: err.message || String(err) });
           }
-        } else {
-          Swal.fire({ icon:'error', title:'Gagal', text: (res && (res.message||res.error)) ? (res.message||res.error) : 'Tidak berjaya' });
-        }
-      } catch (err) {
-        hideLoading();
-        Swal.fire({ icon:'error', title:'Ralat', text: err.message || String(err) });
-      }
-    });
-
-  });
-});
-
-
+        });
+      });// end didOpen
+    
   document.querySelectorAll('.btn-query').forEach(btn=>{
     btn.addEventListener('click', async ev=>{
       const id = ev.currentTarget.dataset.id;
