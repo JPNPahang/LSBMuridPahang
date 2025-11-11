@@ -793,6 +793,7 @@ $('loginOfficer').addEventListener('click', async ()=>{
     showCancelButton: true,
     confirmButtonText: 'LOG IN'
   });
+  
   if (!pw) return;
 
   try {
@@ -868,7 +869,21 @@ $('loginOfficer').addEventListener('click', async ()=>{
     Swal.fire({ icon: 'error', title: 'Ralat sambungan', text: err.message || '' });
   }
 });
-
+// ✅ NOW add the refresh handler OUTSIDE, at the same level
+$('refreshOfficer').addEventListener('click', async () => {
+  if (!officerSecret) {
+    return Swal.fire({ icon:'warning', title:'Sila log masuk dahulu' });
+  }
+  showLoading();
+  try {
+    await loadRequests();
+    Swal.fire({ icon:'success', title:'Data dikemaskini', timer:900, showConfirmButton:false });
+  } catch (err) {
+    Swal.fire({ icon:'error', title:'Gagal kemaskini', text: err.message || String(err) });
+  } finally { 
+    hideLoading(); 
+  }
+});
 
 /* Filters control (no PIC) */
 $('applyFilters').addEventListener('click', ()=> renderTablesFromCache());
@@ -1174,13 +1189,16 @@ document.querySelectorAll('.view-files').forEach(btn=>{
             showCancelButton: true,
             confirmButtonText: 'Mula Annotate & Simpan',
             preConfirm: () => {
-              const fileUrl = document.getElementById('swal_fileUrl').value.trim();
-              const stampText = document.getElementById('swal_stampText').value.trim();
-              const imgInput = document.getElementById('swal_stampImage');
-              const imageFile = (imgInput && imgInput.files && imgInput.files[0]) ? imgInput.files[0] : null;
-              if (!fileUrl) Swal.showValidationMessage('Sila masukkan pautan fail Drive terlebih dahulu (atau URL).');
-              return { fileUrl, stampText, imageFile };
+            const fileUrl = document.getElementById('swal_fileUrl').value.trim();
+            const stampText = document.getElementById('swal_stampText').value.trim();
+            const imgInput = document.getElementById('swal_stampImage');
+            const imageFile = (imgInput && imgInput.files && imgInput.files[0]) ? imgInput.files[0] : null;
+            if (!fileUrl) {
+                          Swal.showValidationMessage('Sila masukkan pautan fail Drive terlebih dahulu (atau URL).');
+                          return false; // <<-- penting
             }
+                return { fileUrl, stampText, imageFile };
+              }
           });
           if (!values) return;
 
@@ -1206,7 +1224,10 @@ document.querySelectorAll('.view-files').forEach(btn=>{
             Swal.fire({ icon:'error', title:'Ralat', text: err.message || String(err) });
           }
         });
-      });// end didOpen
+      }// end didOpen
+    }); // end Swal.fire (didOpen + modal)
+  }); // end addEventListener('click') untuk .view-files
+}); // end forEach .view-files
     
   document.querySelectorAll('.btn-query').forEach(btn=>{
     btn.addEventListener('click', async ev=>{
